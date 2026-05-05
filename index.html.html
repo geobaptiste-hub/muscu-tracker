@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muscu Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      html, body { background: #1a1a1a; color: #f5f5f5; }
+    }
+    
+    .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
+    
+    .header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+    .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+    .header p { font-size: 12px; color: #888; }
+    
+    /* ── Sync bar ── */
+    .sync-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      font-size: 13px;
+      border: 0.5px solid rgba(0,0,0,0.1);
+      background: rgba(0,0,0,0.02);
+    }
+    @media (prefers-color-scheme: dark) {
+      .sync-bar { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); }
+    }
+    .sync-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      background: #ccc;
+    }
+    .sync-dot.connected { background: #4caf50; }
+    .sync-dot.syncing { background: #ff9800; animation: pulse 1s infinite; }
+    .sync-dot.error { background: #f44336; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .sync-label { flex: 1; color: #666; }
+    @media (prefers-color-scheme: dark) { .sync-label { color: #aaa; } }
+    .sync-btn {
+      padding: 5px 12px; font-size: 12px; font-weight: 600;
+      border-radius: 6px; border: 0.5px solid rgba(0,0,0,0.15);
+      background: #fff; cursor: pointer; white-space: nowrap;
+    }
+    @media (prefers-color-scheme: dark) {
+      .sync-btn { background: #2a2a2a; border-color: rgba(255,255,255,0.15); color: #f5f5f5; }
+    }
+    .sync-btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    @media (prefers-color-scheme: dark) {
+      .sync-btn.primary { background: #f5f5f5; color: #1a1a1a; }
+    }
+
+    /* ── Config overlay ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 100;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .overlay.show { display: flex; }
+    .overlay-box {
+      background: #fff; border-radius: 16px; padding: 1.5rem;
+      width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
+    }
+    @media (prefers-color-scheme: dark) {
+      .overlay-box { background: #1e1e1e; color: #f5f5f5; }
+    }
+    .overlay-title { font-size: 18px; font-weight: 700; margin-bottom: 1rem; }
+    .overlay-step {
+      background: rgba(0,0,0,0.04); border-radius: 10px;
+      padding: 12px 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.6;
+    }
+    @media (prefers-color-scheme: dark) { .overlay-step { background: rgba(255,255,255,0.06); } }
+    .overlay-step b { font-weight: 600; }
+    .overlay-step a { color: #1a73e8; }
+    .overlay-step code {
+      background: rgba(0,0,0,0.08); border-radius: 4px;
+      padding: 1px 5px; font-family: monospace; font-size: 12px;
+    }
+    @media (prefers-color-scheme: dark) { .overlay-step code { background: rgba(255,255,255,0.12); } }
+    .step-num {
+      display: inline-block; background: #1a1a1a; color: #fff;
+      border-radius: 50%; width: 20px; height: 20px;
+      line-height: 20px; text-align: center; font-size: 11px; font-weight: 700;
+      margin-right: 6px; flex-shrink: 0;
+    }
+    @media (prefers-color-scheme: dark) { .step-num { background: #f5f5f5; color: #1a1a1a; } }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 2rem; border-bottom: 0.5px solid rgba(0,0,0,0.1); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab-btn { flex-shrink: 0; padding: 12px 16px; border: none; background: none; cursor: pointer; font-size: 14px; font-weight: 500; color: #888; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+    @media (prefers-color-scheme: dark) { .tab-btn.active { color: #f5f5f5; border-bottom-color: #f5f5f5; } }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select, textarea { width: 100%; padding: 11px 12px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-family: inherit; font-size: 14px; background: #fff; color: #1a1a1a; transition: all 0.2s; }
+    @media (prefers-color-scheme: dark) { input, select, textarea { background: #2a2a2a; color: #f5f5f5; border-color: rgba(255,255,255,0.15); } }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(0,0,0,0.3); background: #f8f8f8; }
+    @media (prefers-color-scheme: dark) { input:focus, select:focus, textarea:focus { background: #333; border-color: rgba(255,255,255,0.3); } }
+    
+    .exercise-block { background: rgba(0,0,0,0.03); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 0.5px solid rgba(0,0,0,0.1); }
+    @media (prefers-color-scheme: dark) { .exercise-block { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
+    .exercise-title { font-weight: 600; font-size: 13px; margin-bottom: 12px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
+    @media (prefers-color-scheme: dark) { .exercise-title { color: #f5f5f5; } }
+    .sets-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .set-input { display: flex; gap: 4px; }
+    .set-input input { flex: 1; padding: 8px; font-size: 12px; }
+    
+    .btn-group { display: flex; gap: 8px; margin-top: 12px; }
+    button { padding: 11px 16px; border: 0.5px solid rgba(0,0,0,0.2); background: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; color: #1a1a1a; transition: all 0.2s; }
+    @media (prefers-color-scheme: dark) { button { background: #2a2a2a; color: #f5f5f5; border-color: rgba(255,255,255,0.2); } }
+    button:hover { background: rgba(0,0,0,0.05); }
+    @media (prefers-color-scheme: dark) { button:hover { background: rgba(255,255,255,0.1); } }
+    button:active { transform: scale(0.98); }
+    .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    @media (prefers-color-scheme: dark) { .btn-primary { background: #f5f5f5; color: #1a1a1a; border-color: #f5f5f5; } }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-danger { color: #d32f2f; border-color: rgba(211,47,47,0.3); }
+    .btn-danger:hover { background: rgba(211,47,47,0.1); }
+    
+    .sessions-list { display: flex; flex-direction: column; gap: 12px; }
+    .session-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px; }
+    @media (prefers-color-scheme: dark) { .session-card { background: #2a2a2a; border-color: rgba(255,255,255,0.1); } }
+    .session-header { font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+    .session-info { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .session-exos { font-size: 12px; color: #888; line-height: 1.6; }
+    
+    .export-section { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; border: 0.5px solid rgba(0,0,0,0.1); }
+    @media (prefers-color-scheme: dark) { .export-section { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
+    .export-title { font-weight: 600; margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .settings-section { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; border: 0.5px solid rgba(0,0,0,0.1); }
+    @media (prefers-color-scheme: dark) { .settings-section { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
+    .settings-title { font-weight: 600; margin-bottom: 1rem; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .exercise-list-item { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    @media (prefers-color-scheme: dark) { .exercise-list-item { background: #2a2a2a; border-color: rgba(255,255,255,0.1); } }
+    .add-exercise-input { display: flex; gap: 8px; margin-bottom: 1rem; }
+    .add-exercise-input input { flex: 1; }
+    
+    .success-msg { background: rgba(76,175,80,0.1); color: #4caf50; padding: 12px; border-radius: 8px; margin-bottom: 1rem; font-size: 13px; display: none; border: 0.5px solid rgba(76,175,80,0.3); }
+    .success-msg.show { display: block; }
+    .section-heading { font-weight: 600; font-size: 13px; margin: 1.5rem 0 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .no-data { text-align: center; color: #888; padding: 2rem 1rem; font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>💪 Muscu Tracker</h1>
+    <p>Suivi de tes séances d'entraînement</p>
+  </div>
+
+  <!-- Barre de synchronisation Google Drive -->
+  <div class="sync-bar">
+    <div class="sync-dot" id="syncDot"></div>
+    <span class="sync-label" id="syncLabel">Non connecté à Google Drive</span>
+    <button class="sync-btn" id="syncActionBtn" onclick="handleSyncAction()">Configurer</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('form')">Saisie</button>
+    <button class="tab-btn" onclick="switchTab('sessions')">Historique</button>
+    <button class="tab-btn" onclick="switchTab('export')">Export</button>
+    <button class="tab-btn" onclick="switchTab('settings')">Paramètres</button>
+  </div>
+
+  <!-- TAB: FORM -->
+  <div id="form" class="tab-content active">
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="sessionDate">
+    </div>
+    <div class="form-group">
+      <label>Type de séance</label>
+      <select id="sessionType" onchange="updateExerciseList()">
+        <option value="">-- Sélectionner --</option>
+        <optgroup label="Pecs">
+          <option value="P1">P1 - Force</option>
+          <option value="P2">P2 - Séries longues</option>
+          <option value="P3">P3 - Hypertrophie</option>
+          <option value="P4">P4 - Intensification</option>
+          <option value="P5">P5 - Séries longues</option>
+        </optgroup>
+        <optgroup label="Fessiers">
+          <option value="F1">F1 - Force</option>
+          <option value="F2">F2 - Séries longues</option>
+          <option value="F3">F3 - Hypertrophie</option>
+          <option value="F4">F4 - Intensification</option>
+          <option value="F5">F5 - Séries longues</option>
+        </optgroup>
+        <optgroup label="Dos">
+          <option value="D1">D1 - Force</option>
+          <option value="D2">D2 - Séries longues</option>
+          <option value="D3">D3 - Hypertrophie</option>
+          <option value="D4">D4 - Intensification</option>
+          <option value="D5">D5 - Séries longues</option>
+        </optgroup>
+        <optgroup label="Quads">
+          <option value="Q1">Q1 - Force</option>
+          <option value="Q2">Q2 - Séries longues</option>
+          <option value="Q3">Q3 - Hypertrophie</option>
+          <option value="Q4">Q4 - Intensification</option>
+          <option value="Q5">Q5 - Séries longues</option>
+        </optgroup>
+      </select>
+    </div>
+    <div id="exercisesContainer"></div>
+    <div class="btn-group" style="width: 100%; gap: 8px; margin-top: 1.5rem;">
+      <button class="btn-primary" style="flex: 1; padding: 12px; font-weight: 600;" onclick="saveSession(false)">✓ Sauvegarder</button>
+      <button class="btn-primary" style="flex: 1; padding: 12px; font-weight: 600;" onclick="saveSession(true)">✓ Sauv. & Effacer</button>
+      <button class="btn-danger" style="flex: 1; padding: 12px; font-weight: 600;" onclick="clearForm()">Effacer</button>
+    </div>
+  </div>
+
+  <!-- TAB: SESSIONS -->
+  <div id="sessions" class="tab-content">
+    <div class="sessions-list" id="sessionsList"></div>
+    <div id="noSessions" class="no-data">Aucune séance enregistrée</div>
+  </div>
+
+  <!-- TAB: EXPORT -->
+  <div id="export" class="tab-content">
+    <div class="success-msg" id="successMsg">✓ Copié dans le presse-papiers !</div>
+    <div class="export-section">
+      <div class="export-title">Exporter les données</div>
+      <button class="btn-primary" style="width: 100%; margin-bottom: 8px; font-weight: 600;" onclick="exportToExcel()">📥 Télécharger (.tsv → Calc)</button>
+      <button style="width: 100%; font-weight: 600;" onclick="copyToClipboard()">📋 Copier au presse-papiers</button>
+    </div>
+    <div class="form-group">
+      <label>Aperçu des données</label>
+      <textarea id="dataPreview" readonly style="min-height: 200px; font-size: 11px; font-family: 'Courier New', monospace;"></textarea>
+    </div>
+  </div>
+
+  <!-- TAB: SETTINGS -->
+  <div id="settings" class="tab-content">
+    <div class="settings-section">
+      <div class="settings-title">🔗 Google Drive Sync</div>
+      <div style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.6;">
+        Tes données sont synchronisées automatiquement sur Google Drive.<br>
+        Ouvre ce fichier HTML sur n'importe quel appareil avec le même compte Google.
+      </div>
+      <button style="width: 100%; margin-bottom: 8px;" onclick="showConfigOverlay()">⚙️ Reconfigurer Google Drive</button>
+      <button style="width: 100%; margin-bottom: 8px;" onclick="forcePull()">⬇️ Charger depuis Drive</button>
+      <button style="width: 100%; margin-bottom: 8px;" onclick="forcePush()">⬆️ Envoyer vers Drive</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Gérer les exercices</div>
+      <div class="section-heading">Pecs</div>
+      <div id="exerciseList-P"></div>
+      <div class="add-exercise-input">
+        <input type="text" id="newExerciseP" placeholder="Nouvel exercice...">
+        <button onclick="addExercise('P')">+</button>
+      </div>
+      <div class="section-heading">Fessiers</div>
+      <div id="exerciseList-F"></div>
+      <div class="add-exercise-input">
+        <input type="text" id="newExerciseF" placeholder="Nouvel exercice...">
+        <button onclick="addExercise('F')">+</button>
+      </div>
+      <div class="section-heading">Dos</div>
+      <div id="exerciseList-D"></div>
+      <div class="add-exercise-input">
+        <input type="text" id="newExerciseD" placeholder="Nouvel exercice...">
+        <button onclick="addExercise('D')">+</button>
+      </div>
+      <div class="section-heading">Quads</div>
+      <div id="exerciseList-Q"></div>
+      <div class="add-exercise-input">
+        <input type="text" id="newExerciseQ" placeholder="Nouvel exercice...">
+        <button onclick="addExercise('Q')">+</button>
+      </div>
+    </div>
+
+    <button style="width: 100%; font-weight: 600;" onclick="resetAllData()">🗑️ Réinitialiser toutes les données</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     OVERLAY DE CONFIGURATION GOOGLE DRIVE
+     ═══════════════════════════════════════════════════ -->
+<div class="overlay" id="configOverlay">
+  <div class="overlay-box">
+    <div class="overlay-title">🔑 Configuration Google Drive</div>
+
+    <div class="overlay-step">
+      <span class="step-num">1</span>
+      <b>Va sur</b> <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a><br>
+      Connecte-toi avec ton compte Google habituel.
+    </div>
+
+    <div class="overlay-step">
+      <span class="step-num">2</span>
+      <b>Crée un projet</b> : clique sur le menu déroulant en haut ("Sélectionner un projet") → <b>Nouveau projet</b> → nomme-le <code>muscu-tracker</code> → <b>Créer</b>.
+    </div>
+
+    <div class="overlay-step">
+      <span class="step-num">3</span>
+      <b>Active l'API Drive</b> : menu hamburger ☰ → <b>API et services</b> → <b>Bibliothèque</b> → recherche <code>Google Drive API</code> → clique dessus → <b>Activer</b>.
+    </div>
+
+    <div class="overlay-step">
+      <span class="step-num">4</span>
+      <b>Crée un identifiant OAuth</b> : <b>API et services</b> → <b>Identifiants</b> → <b>+ Créer des identifiants</b> → <b>ID client OAuth</b>.<br>
+      • Type d'application : <b>Application Web</b><br>
+      • Nom : <code>Muscu Tracker</code><br>
+      • Origines JS autorisées : clique <b>+ Ajouter une URI</b> → tape <code>null</code> (pour les fichiers locaux)<br>
+      → <b>Créer</b>
+    </div>
+
+    <div class="overlay-step">
+      <span class="step-num">5</span>
+      <b>Configure l'écran de consentement</b> (si demandé) : <b>API et services</b> → <b>Écran de consentement OAuth</b> → Type : <b>Externe</b> → remplis juste le nom de l'app (<code>Muscu Tracker</code>) et ton e-mail → <b>Enregistrer</b>. Puis dans <b>Utilisateurs tests</b>, ajoute ton adresse Gmail.
+    </div>
+
+    <div class="overlay-step">
+      <span class="step-num">6</span>
+      <b>Copie ton Client ID</b> : retourne dans <b>Identifiants</b>, clique sur ton client OAuth → copie le champ <b>ID client</b> (se termine par <code>.apps.googleusercontent.com</code>).
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Colle ton Client ID ici</label>
+      <input type="text" id="clientIdInput" placeholder="xxxxxxx.apps.googleusercontent.com" style="margin-bottom: 8px;">
+      <button class="btn-primary" style="width: 100%; font-weight: 600;" onclick="saveClientId()">✓ Enregistrer et connecter</button>
+    </div>
+
+    <button style="width: 100%; color: #888; border-color: rgba(0,0,0,0.1);" onclick="closeConfigOverlay()">Annuler</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DONNÉES DE L'APP
+// ════════════════════════════════════════════════════════
+const EXERCISE_LISTS = {
+  P: ['EC', 'EC pecs machine', 'EC pecs machine double', 'EC poulie haute', 'EC poulie basse', 'EC el bas', 'EC el haut', 'DC', 'DCH', 'DCHD', 'DCHI', 'DD', 'DI', 'Press pecs cv bi', 'Press pecs cv uni', 'Pull over'],
+  F: ['HT poulie', 'Fentes', 'Fentes marchées', 'Fentes SDT', 'SDT', 'Mollets debout', 'Mollets assis', 'Leg curl'],
+  D: ['Tractions', 'Tirage conv', 'Tirage conv uni', 'Tirage haltère uni', 'Tirage machine double', 'Rowing', 'Tirage bas', 'Tirage bas uni', 'Tirage haut', 'Tirage haut uni'],
+  Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis'],
+};
+const VARIATIONS = {
+  P: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+  F: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+  D: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+  Q: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+};
+let sessions = [];
+
+// ════════════════════════════════════════════════════════
+//  GOOGLE DRIVE SYNC
+// ════════════════════════════════════════════════════════
+const DRIVE_FILE_NAME = 'muscu_tracker_data.json';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+// Utilise drive.appdata → le fichier est invisible dans Drive (caché dans AppData),
+// ce qui est plus propre. Seule cette app peut y accéder.
+
+let gdriveReady = false;
+let accessToken = null;
+let driveFileId = null;
+
+function getSavedClientId() {
+  return localStorage.getItem('muscuGDriveClientId') || '';
+}
+
+function showConfigOverlay() {
+  document.getElementById('clientIdInput').value = getSavedClientId();
+  document.getElementById('configOverlay').classList.add('show');
+}
+function closeConfigOverlay() {
+  document.getElementById('configOverlay').classList.remove('show');
+}
+
+function saveClientId() {
+  const id = document.getElementById('clientIdInput').value.trim();
+  if (!id || !id.includes('.apps.googleusercontent.com')) {
+    alert('Le Client ID ne semble pas valide. Il doit se terminer par .apps.googleusercontent.com');
+    return;
+  }
+  localStorage.setItem('muscuGDriveClientId', id);
+  closeConfigOverlay();
+  initGoogleAuth();
+}
+
+function handleSyncAction() {
+  if (!getSavedClientId()) {
+    showConfigOverlay();
+  } else if (!gdriveReady) {
+    initGoogleAuth();
+  } else {
+    forcePull();
+  }
+}
+
+// Charge le script Google Identity Services dynamiquement
+function loadGISScript() {
+  return new Promise((resolve, reject) => {
+    if (window.google && window.google.accounts) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function initGoogleAuth() {
+  const clientId = getSavedClientId();
+  if (!clientId) { showConfigOverlay(); return; }
+
+  setSyncState('syncing', 'Connexion à Google…');
+
+  try {
+    await loadGISScript();
+
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPES,
+      callback: async (resp) => {
+        if (resp.error) {
+          setSyncState('error', 'Erreur d\'authentification : ' + resp.error);
+          return;
+        }
+        accessToken = resp.access_token;
+        gdriveReady = true;
+        setSyncState('syncing', 'Chargement des données…');
+        await pullFromDrive();
+      },
+    });
+
+    tokenClient.requestAccessToken({ prompt: '' });
+  } catch (e) {
+    setSyncState('error', 'Impossible de charger Google. Vérifie ta connexion.');
+    console.error(e);
+  }
+}
+
+// ── Trouver ou créer le fichier sur Drive (AppData folder) ──
+async function getOrCreateFileId() {
+  if (driveFileId) return driveFileId;
+
+  // Chercher le fichier existant
+  const search = await fetch(
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name)`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  const data = await search.json();
+  if (data.files && data.files.length > 0) {
+    driveFileId = data.files[0].id;
+    return driveFileId;
+  }
+
+  // Créer le fichier
+  const create = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: DRIVE_FILE_NAME, parents: ['appDataFolder'] }),
+  });
+  const created = await create.json();
+  driveFileId = created.id;
+  return driveFileId;
+}
+
+// ── Lire depuis Drive ──
+async function pullFromDrive() {
+  try {
+    const fileId = await getOrCreateFileId();
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (res.status === 200) {
+      const text = await res.text();
+      if (text && text.trim().startsWith('{')) {
+        const data = JSON.parse(text);
+        if (Array.isArray(data.sessions)) {
+          sessions = data.sessions;
+          saveToLocalStorage();
+          renderSessionsList();
+          updateDataPreview();
+        }
+      }
+    }
+    setSyncState('connected', 'Synchronisé · ' + nowStr());
+    updateSyncButton('Sync maintenant', false);
+  } catch (e) {
+    setSyncState('error', 'Erreur de lecture Drive');
+    console.error(e);
+  }
+}
+
+// ── Écrire vers Drive ──
+async function pushToDrive() {
+  if (!gdriveReady || !accessToken) return;
+  setSyncState('syncing', 'Synchronisation…');
+  try {
+    const fileId = await getOrCreateFileId();
+    const payload = JSON.stringify({ sessions, updatedAt: new Date().toISOString() });
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: payload,
+    });
+    setSyncState('connected', 'Synchronisé · ' + nowStr());
+  } catch (e) {
+    setSyncState('error', 'Erreur d\'envoi vers Drive');
+    console.error(e);
+  }
+}
+
+async function forcePull() {
+  if (!gdriveReady) { initGoogleAuth(); return; }
+  setSyncState('syncing', 'Chargement depuis Drive…');
+  await pullFromDrive();
+}
+async function forcePush() {
+  if (!gdriveReady) { initGoogleAuth(); return; }
+  await pushToDrive();
+}
+
+// ── UI sync ──
+function setSyncState(state, label) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = label;
+}
+function updateSyncButton(text, isPrimary) {
+  const btn = document.getElementById('syncActionBtn');
+  btn.textContent = text;
+  btn.className = 'sync-btn' + (isPrimary ? ' primary' : '');
+}
+function nowStr() {
+  return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ════════════════════════════════════════════════════════
+//  STOCKAGE LOCAL (fallback quand Drive non connecté)
+// ════════════════════════════════════════════════════════
+function saveToLocalStorage() {
+  localStorage.setItem('muscuSessions', JSON.stringify(sessions));
+}
+function loadFromStorage() {
+  const saved = localStorage.getItem('muscuSessions');
+  if (saved) {
+    try { sessions = JSON.parse(saved); } catch (e) {}
+  }
+}
+
+// Sauvegarde locale + sync Drive automatique
+function saveToStorage() {
+  saveToLocalStorage();
+  if (gdriveReady) pushToDrive();
+}
+
+// ════════════════════════════════════════════════════════
+//  LOGIQUE APP (inchangée)
+// ════════════════════════════════════════════════════════
+function init() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('sessionDate').value = today;
+  loadFromStorage();
+  renderExerciseLists();
+  updateDataPreview();
+
+  // Auto-connect si un Client ID est déjà sauvegardé
+  if (getSavedClientId()) {
+    setSyncState('syncing', 'Connexion automatique…');
+    updateSyncButton('Connexion…', false);
+    setTimeout(initGoogleAuth, 500);
+  } else {
+    setSyncState('', 'Google Drive non configuré');
+    updateSyncButton('Configurer', true);
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+  if (tab === 'sessions') renderSessionsList();
+  if (tab === 'export') updateDataPreview();
+}
+
+function updateExerciseList() {
+  const type = document.getElementById('sessionType').value;
+  if (!type) { document.getElementById('exercisesContainer').innerHTML = ''; return; }
+  const muscleGroup = type.charAt(0);
+  const exercises = EXERCISE_LISTS[muscleGroup] || [];
+  const variations = VARIATIONS[muscleGroup] || [];
+  let html = '';
+  for (let i = 0; i < 6; i++) {
+    html += `
+      <div class="exercise-block">
+        <div class="exercise-title">Exercice ${i + 1}</div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label>Exercice</label>
+          <select id="exo${i}">
+            <option value="">-- Vide --</option>
+            ${exercises.map(e => `<option value="${e}">${e}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label>Variation</label>
+          <select id="var${i}">
+            <option value="">-- Aucune --</option>
+            ${variations.map(v => `<option value="${v}">${v}</option>`).join('')}
+          </select>
+        </div>
+        <div style="margin-bottom:4px;">
+          <label style="margin-bottom:6px;">Séries</label>
+          ${[0,1].map(k => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:rgba(220,50,50,0.08);border-radius:6px;padding:6px 8px;">
+              <input type="number" id="poids${i}k${k}" placeholder="kg" min="0" step="0.5"
+                style="width:58px;padding:5px 4px;font-size:13px;text-align:center;border:1px solid rgba(200,50,50,0.4);border-radius:6px;">
+              <span style="font-size:11px;color:#888;white-space:nowrap;">×</span>
+              ${[0,1,2,3].map(j => `
+                <input type="number" id="reps${i}k${k}s${j}" placeholder="—" min="0"
+                  style="width:40px;padding:5px 2px;font-size:13px;text-align:center;border-radius:6px;">
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+  document.getElementById('exercisesContainer').innerHTML = html;
+}
+
+function saveSession(clearAfter) {
+  const type = document.getElementById('sessionType').value;
+  const date = document.getElementById('sessionDate').value;
+  if (!type || !date) { alert('Veuillez sélectionner une date et un type de séance'); return; }
+  const session = { id: Date.now(), type, date, exercises: [] };
+  for (let i = 0; i < 6; i++) {
+    const exo = document.getElementById(`exo${i}`).value;
+    if (!exo) continue;
+    const variation = document.getElementById(`var${i}`).value || '';
+    const lignes = [];
+    for (let k = 0; k < 2; k++) {
+      const poids = parseFloat(document.getElementById(`poids${i}k${k}`).value) || null;
+      const reps = [];
+      for (let j = 0; j < 4; j++) {
+        const r = parseInt(document.getElementById(`reps${i}k${k}s${j}`).value);
+        if (!isNaN(r) && r > 0) reps.push(r);
+      }
+      if (poids !== null || reps.length > 0) lignes.push({ poids, reps });
+    }
+    if (lignes.length > 0) session.exercises.push({ exo, variation, lignes });
+  }
+  if (session.exercises.length === 0) { alert('Veuillez ajouter au moins un exercice avec des données'); return; }
+  sessions.push(session);
+  saveToStorage();
+  alert('✓ Séance sauvegardée !');
+  if (clearAfter) clearForm();
+}
+
+function clearForm() {
+  document.getElementById('sessionType').value = '';
+  updateExerciseList();
+  document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+}
+
+function renderSessionsList() {
+  const list = document.getElementById('sessionsList');
+  const noSessions = document.getElementById('noSessions');
+  if (sessions.length === 0) { list.innerHTML = ''; noSessions.style.display = 'block'; return; }
+  noSessions.style.display = 'none';
+  const sorted = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+  list.innerHTML = sorted.map(s => `
+    <div class="session-card">
+      <div class="session-header">${s.type} - ${s.date}</div>
+      <div class="session-info">${s.exercises.length} exercice(s)</div>
+      <div class="session-exos">
+        ${s.exercises.map(e => `${e.exo}${e.variation ? ' (' + e.variation + ')' : ''} - ${(e.lignes ? e.lignes.reduce((a,l)=>a+(l.reps||[]).length,0) : (e.reps||[]).length)} séries`).join('<br>')}
+      </div>
+      <button class="btn-danger" style="margin-top: 8px; width: 100%; font-weight: 500;" onclick="deleteSession(${s.id})">Supprimer</button>
+    </div>
+  `).join('');
+}
+
+function deleteSession(id) {
+  if (!confirm('Supprimer cette séance ?')) return;
+  sessions = sessions.filter(s => s.id !== id);
+  saveToStorage();
+  renderSessionsList();
+}
+
+function buildCalcTSV(sessionsToExport) {
+  var T = '\t', lines = [];
+  var sorted = [...sessionsToExport].sort((a,b) => new Date(b.date)-new Date(a.date));
+  sorted.forEach((s, si) => {
+    var p = s.date.split('-');
+    var dateFR = p[2]+'/'+p[1]+'/'+p[0].substring(2);
+    lines.push(s.type + T + 'date :' + T + dateFR + T + T);
+    (s.exercises||[]).forEach(e => {
+      lines.push((e.variation||'') + T + T + T + (e.exo||'') + T);
+      lines.push(T + T + T + T);
+      var lignes = e.lignes || [];
+      if (!lignes.length && (e.poids||e.reps)) lignes = [{ poids: e.poids, reps: e.reps||[] }];
+      for (var k = 0; k < 2; k++) {
+        var lg = lignes[k];
+        if (lg && (lg.poids || (lg.reps && lg.reps.length))) {
+          var pw = (lg.poids !== null && lg.poids !== undefined) ? lg.poids : '';
+          var rs = (lg.reps||[]).slice(0,4);
+          while (rs.length < 4) rs.push('');
+          lines.push(pw + T + rs.join(T));
+        } else { lines.push(T + T + T + T); }
+      }
+    });
+    if (si < sorted.length-1) lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function updateDataPreview() {
+  const sorted = [...sessions].sort((a,b) => new Date(b.date)-new Date(a.date));
+  document.getElementById('dataPreview').value = buildCalcTSV(sorted) || 'Aucune donnée';
+}
+
+function copyToClipboard() {
+  const text = document.getElementById('dataPreview').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const msg = document.getElementById('successMsg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 2000);
+  }).catch(() => {
+    document.getElementById('dataPreview').select();
+    document.execCommand('copy');
+  });
+}
+
+function exportToExcel() {
+  const tsv = buildCalcTSV(sessions);
+  const blob = new Blob(['\uFEFF' + tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const parts = new Date().toISOString().split('T')[0].split('-');
+  link.setAttribute('download', `muscu_${parts[2]}-${parts[1]}-${parts[0].substring(2)}.tsv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function renderExerciseLists() {
+  Object.entries(EXERCISE_LISTS).forEach(([key, exos]) => {
+    document.getElementById(`exerciseList-${key}`).innerHTML = exos.map(e => `
+      <div class="exercise-list-item">
+        <span>${e}</span>
+        <button class="btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteExercise('${key}', '${e}')">−</button>
+      </div>
+    `).join('');
+  });
+}
+
+function addExercise(group) {
+  const input = document.getElementById(`newExercise${group}`);
+  const name = input.value.trim();
+  if (!name) return;
+  if (EXERCISE_LISTS[group].includes(name)) { alert('Cet exercice existe déjà'); return; }
+  EXERCISE_LISTS[group].push(name);
+  input.value = '';
+  saveToStorage();
+  renderExerciseLists();
+}
+
+function deleteExercise(group, name) {
+  EXERCISE_LISTS[group] = EXERCISE_LISTS[group].filter(e => e !== name);
+  saveToStorage();
+  renderExerciseLists();
+}
+
+function resetAllData() {
+  if (!confirm('⚠️ Cela supprimera TOUTES les données. Êtes-vous sûr ?')) return;
+  if (!confirm('VRAIMENT sûr ? Aucun retour en arrière.')) return;
+  sessions = [];
+  Object.keys(EXERCISE_LISTS).forEach(k => { EXERCISE_LISTS[k] = []; });
+  saveToStorage();
+  alert('✓ Données réinitialisées');
+  location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
