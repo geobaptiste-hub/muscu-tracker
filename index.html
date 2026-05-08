@@ -23,7 +23,6 @@
     .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 12px; color: #888; }
     
-    /* ── Sync bar ── */
     .sync-bar {
       display: flex;
       align-items: center;
@@ -61,7 +60,6 @@
       .sync-btn.primary { background: #f5f5f5; color: #1a1a1a; }
     }
 
-    /* ── Config overlay ── */
     .overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(0,0,0,0.5); z-index: 100;
@@ -114,9 +112,6 @@
     @media (prefers-color-scheme: dark) { .exercise-block { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
     .exercise-title { font-weight: 600; font-size: 13px; margin-bottom: 12px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
     @media (prefers-color-scheme: dark) { .exercise-title { color: #f5f5f5; } }
-    .sets-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-    .set-input { display: flex; gap: 4px; }
-    .set-input input { flex: 1; padding: 8px; font-size: 12px; }
     
     .btn-group { display: flex; gap: 8px; margin-top: 12px; }
     button { padding: 11px 16px; border: 0.5px solid rgba(0,0,0,0.2); background: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; color: #1a1a1a; transition: all 0.2s; }
@@ -163,7 +158,6 @@
     <p>Suivi de tes séances d'entraînement</p>
   </div>
 
-  <!-- Barre de synchronisation Google Drive -->
   <div class="sync-bar">
     <div class="sync-dot" id="syncDot"></div>
     <span class="sync-label" id="syncLabel">Non connecté à Google Drive</span>
@@ -181,7 +175,7 @@
   <div id="form" class="tab-content active">
     <div class="form-group">
       <label>Date</label>
-      <input type="date" id="sessionDate">
+      <input type="date" id="sessionDate" oninput="saveDraftForm()">
     </div>
     <div class="form-group">
       <label>Type de séance</label>
@@ -290,9 +284,7 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     OVERLAY DE CONFIGURATION GOOGLE DRIVE
-     ═══════════════════════════════════════════════════ -->
+<!-- OVERLAY CONFIGURATION GOOGLE DRIVE -->
 <div class="overlay" id="configOverlay">
   <div class="overlay-box">
     <div class="overlay-title">🔑 Configuration Google Drive</div>
@@ -361,12 +353,88 @@ const VARIATIONS = {
 let sessions = [];
 
 // ════════════════════════════════════════════════════════
+//  SAUVEGARDE DU BROUILLON DE FORMULAIRE
+// ════════════════════════════════════════════════════════
+
+// Collecte toutes les valeurs du formulaire en cours
+function collectDraft() {
+  const type = document.getElementById('sessionType').value;
+  const date = document.getElementById('sessionDate').value;
+  if (!type) return null;
+  const muscleGroup = type.charAt(0);
+  const exercises = [];
+  for (let i = 0; i < 6; i++) {
+    const exoEl = document.getElementById(`exo${i}`);
+    if (!exoEl) break;
+    const lignes = [];
+    for (let k = 0; k < 2; k++) {
+      const poidsEl = document.getElementById(`poids${i}k${k}`);
+      const poids = poidsEl ? poidsEl.value : '';
+      const reps = [];
+      for (let j = 0; j < 4; j++) {
+        const repEl = document.getElementById(`reps${i}k${k}s${j}`);
+        reps.push(repEl ? repEl.value : '');
+      }
+      lignes.push({ poids, reps });
+    }
+    exercises.push({
+      exo: exoEl.value,
+      variation: (document.getElementById(`var${i}`) || {}).value || '',
+      lignes,
+    });
+  }
+  return { type, date, exercises };
+}
+
+// Sauvegarde le brouillon dans localStorage — appelée à chaque input
+function saveDraftForm() {
+  const draft = collectDraft();
+  if (draft) {
+    localStorage.setItem('muscuDraft', JSON.stringify(draft));
+  }
+}
+
+// Efface le brouillon (après sauvegarde ou effacement manuel)
+function clearDraft() {
+  localStorage.removeItem('muscuDraft');
+}
+
+// Restaure le brouillon au chargement
+function restoreDraft() {
+  const raw = localStorage.getItem('muscuDraft');
+  if (!raw) return;
+  let draft;
+  try { draft = JSON.parse(raw); } catch (e) { return; }
+  if (!draft || !draft.type) return;
+
+  // Restaure le type (déclenche updateExerciseList sans sauvegarder le draft)
+  document.getElementById('sessionType').value = draft.type;
+  document.getElementById('sessionDate').value = draft.date || new Date().toISOString().split('T')[0];
+  updateExerciseList(true); // true = mode restauration (pas de saveDraft dedans)
+
+  // Restaure les valeurs des exercices
+  (draft.exercises || []).forEach((e, i) => {
+    const exoEl = document.getElementById(`exo${i}`);
+    const varEl = document.getElementById(`var${i}`);
+    if (!exoEl) return;
+    exoEl.value = e.exo || '';
+    if (varEl) varEl.value = e.variation || '';
+    (e.lignes || []).forEach((lg, k) => {
+      const poidsEl = document.getElementById(`poids${i}k${k}`);
+      if (poidsEl) poidsEl.value = lg.poids || '';
+      (lg.reps || []).forEach((r, j) => {
+        const repEl = document.getElementById(`reps${i}k${k}s${j}`);
+        if (repEl) repEl.value = r || '';
+      });
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════════
 //  GOOGLE DRIVE SYNC
 // ════════════════════════════════════════════════════════
 const DRIVE_FILE_NAME = 'muscu_tracker_data.json';
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-// Utilise drive.appdata → le fichier est invisible dans Drive (caché dans AppData),
-// ce qui est plus propre. Seule cette app peut y accéder.
 
 let gdriveReady = false;
 let accessToken = null;
@@ -405,7 +473,6 @@ function handleSyncAction() {
   }
 }
 
-// Charge le script Google Identity Services dynamiquement
 function loadGISScript() {
   return new Promise((resolve, reject) => {
     if (window.google && window.google.accounts) { resolve(); return; }
@@ -448,11 +515,9 @@ async function initGoogleAuth() {
   }
 }
 
-// ── Trouver ou créer le fichier sur Drive (AppData folder) ──
 async function getOrCreateFileId() {
   if (driveFileId) return driveFileId;
 
-  // Chercher le fichier existant
   const search = await fetch(
     `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name)`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -463,7 +528,6 @@ async function getOrCreateFileId() {
     return driveFileId;
   }
 
-  // Créer le fichier
   const create = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -474,7 +538,6 @@ async function getOrCreateFileId() {
   return driveFileId;
 }
 
-// ── Lire depuis Drive ──
 async function pullFromDrive() {
   try {
     const fileId = await getOrCreateFileId();
@@ -503,7 +566,6 @@ async function pullFromDrive() {
   }
 }
 
-// ── Écrire vers Drive ──
 async function pushToDrive() {
   if (!gdriveReady || !accessToken) return;
   setSyncState('syncing', 'Synchronisation…');
@@ -532,7 +594,6 @@ async function forcePush() {
   await pushToDrive();
 }
 
-// ── UI sync ──
 function setSyncState(state, label) {
   const dot = document.getElementById('syncDot');
   const lbl = document.getElementById('syncLabel');
@@ -549,7 +610,7 @@ function nowStr() {
 }
 
 // ════════════════════════════════════════════════════════
-//  STOCKAGE LOCAL (fallback quand Drive non connecté)
+//  STOCKAGE LOCAL
 // ════════════════════════════════════════════════════════
 function saveToLocalStorage() {
   localStorage.setItem('muscuSessions', JSON.stringify(sessions));
@@ -561,14 +622,13 @@ function loadFromStorage() {
   }
 }
 
-// Sauvegarde locale + sync Drive automatique
 function saveToStorage() {
   saveToLocalStorage();
   if (gdriveReady) pushToDrive();
 }
 
 // ════════════════════════════════════════════════════════
-//  LOGIQUE APP (inchangée)
+//  LOGIQUE APP
 // ════════════════════════════════════════════════════════
 function init() {
   const today = new Date().toISOString().split('T')[0];
@@ -576,8 +636,8 @@ function init() {
   loadFromStorage();
   renderExerciseLists();
   updateDataPreview();
+  restoreDraft(); // ← Restaure la séance en cours si elle existait
 
-  // Auto-connect si un Client ID est déjà sauvegardé
   if (getSavedClientId()) {
     setSyncState('syncing', 'Connexion automatique…');
     updateSyncButton('Connexion…', false);
@@ -597,9 +657,10 @@ function switchTab(tab) {
   if (tab === 'export') updateDataPreview();
 }
 
-function updateExerciseList() {
+// Le paramètre `restoring` évite de re-sauvegarder le draft pendant la restauration
+function updateExerciseList(restoring) {
   const type = document.getElementById('sessionType').value;
-  if (!type) { document.getElementById('exercisesContainer').innerHTML = ''; return; }
+  if (!type) { document.getElementById('exercisesContainer').innerHTML = ''; clearDraft(); return; }
   const muscleGroup = type.charAt(0);
   const exercises = EXERCISE_LISTS[muscleGroup] || [];
   const variations = VARIATIONS[muscleGroup] || [];
@@ -610,14 +671,14 @@ function updateExerciseList() {
         <div class="exercise-title">Exercice ${i + 1}</div>
         <div class="form-group" style="margin-bottom: 8px;">
           <label>Exercice</label>
-          <select id="exo${i}">
+          <select id="exo${i}" oninput="saveDraftForm()">
             <option value="">-- Vide --</option>
             ${exercises.map(e => `<option value="${e}">${e}</option>`).join('')}
           </select>
         </div>
         <div class="form-group" style="margin-bottom: 8px;">
           <label>Variation</label>
-          <select id="var${i}">
+          <select id="var${i}" oninput="saveDraftForm()">
             <option value="">-- Aucune --</option>
             ${variations.map(v => `<option value="${v}">${v}</option>`).join('')}
           </select>
@@ -627,11 +688,13 @@ function updateExerciseList() {
           ${[0,1].map(k => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:rgba(220,50,50,0.08);border-radius:6px;padding:6px 8px;">
               <input type="number" id="poids${i}k${k}" placeholder="kg" min="0" step="0.5"
-                style="width:58px;padding:5px 4px;font-size:13px;text-align:center;border:1px solid rgba(200,50,50,0.4);border-radius:6px;">
+                style="width:58px;padding:5px 4px;font-size:13px;text-align:center;border:1px solid rgba(200,50,50,0.4);border-radius:6px;"
+                oninput="saveDraftForm()">
               <span style="font-size:11px;color:#888;white-space:nowrap;">×</span>
               ${[0,1,2,3].map(j => `
                 <input type="number" id="reps${i}k${k}s${j}" placeholder="—" min="0"
-                  style="width:40px;padding:5px 2px;font-size:13px;text-align:center;border-radius:6px;">
+                  style="width:40px;padding:5px 2px;font-size:13px;text-align:center;border-radius:6px;"
+                  oninput="saveDraftForm()">
               `).join('')}
             </div>
           `).join('')}
@@ -639,6 +702,7 @@ function updateExerciseList() {
       </div>`;
   }
   document.getElementById('exercisesContainer').innerHTML = html;
+  if (!restoring) saveDraftForm();
 }
 
 function saveSession(clearAfter) {
@@ -665,6 +729,7 @@ function saveSession(clearAfter) {
   if (session.exercises.length === 0) { alert('Veuillez ajouter au moins un exercice avec des données'); return; }
   sessions.push(session);
   saveToStorage();
+  clearDraft(); // ← Efface le brouillon après sauvegarde réussie
   alert('✓ Séance sauvegardée !');
   if (clearAfter) clearForm();
 }
@@ -673,6 +738,7 @@ function clearForm() {
   document.getElementById('sessionType').value = '';
   updateExerciseList();
   document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+  clearDraft(); // ← Efface le brouillon après effacement manuel
 }
 
 function renderSessionsList() {
@@ -789,6 +855,7 @@ function resetAllData() {
   if (!confirm('VRAIMENT sûr ? Aucun retour en arrière.')) return;
   sessions = [];
   Object.keys(EXERCISE_LISTS).forEach(k => { EXERCISE_LISTS[k] = []; });
+  clearDraft();
   saveToStorage();
   alert('✓ Données réinitialisées');
   location.reload();
