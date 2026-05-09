@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Muscu Tracker</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -103,7 +103,7 @@
     
     .form-group { margin-bottom: 1.5rem; }
     label { display: block; font-size: 13px; font-weight: 600; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-    input, select, textarea { width: 100%; padding: 11px 12px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-family: inherit; font-size: 14px; background: #fff; color: #1a1a1a; transition: all 0.2s; }
+    input, select, textarea { width: 100%; padding: 11px 12px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-family: inherit; font-size: 16px; background: #fff; color: #1a1a1a; transition: all 0.2s; }
     @media (prefers-color-scheme: dark) { input, select, textarea { background: #2a2a2a; color: #f5f5f5; border-color: rgba(255,255,255,0.15); } }
     input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(0,0,0,0.3); background: #f8f8f8; }
     @media (prefers-color-scheme: dark) { input:focus, select:focus, textarea:focus { background: #333; border-color: rgba(255,255,255,0.3); } }
@@ -126,9 +126,12 @@
     .btn-danger:hover { background: rgba(211,47,47,0.1); }
     
     .sessions-list { display: flex; flex-direction: column; gap: 12px; }
-    .session-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px; }
+    .session-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px; transition: border-color 0.2s, box-shadow 0.2s; }
+    .session-card.selected { border-color: #1a1a1a; box-shadow: 0 0 0 1px #1a1a1a; }
     @media (prefers-color-scheme: dark) { .session-card { background: #2a2a2a; border-color: rgba(255,255,255,0.1); } }
-    .session-header { font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+    @media (prefers-color-scheme: dark) { .session-card.selected { border-color: #f5f5f5; box-shadow: 0 0 0 1px #f5f5f5; } }
+    .session-header { font-weight: 600; margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+    .session-checkbox { width: 18px; height: 18px; accent-color: #1a1a1a; cursor: pointer; flex-shrink: 0; }
     .session-info { font-size: 12px; color: #888; margin-bottom: 8px; }
     .session-exos { font-size: 12px; color: #888; line-height: 1.6; }
     
@@ -230,7 +233,6 @@
     <div class="success-msg" id="successMsg">✓ Copié dans le presse-papiers !</div>
     <div class="export-section">
       <div class="export-title">Exporter les données</div>
-      <button class="btn-primary" style="width: 100%; margin-bottom: 8px; font-weight: 600;" onclick="exportToExcel()">📥 Télécharger (.tsv → Calc)</button>
       <button style="width: 100%; font-weight: 600;" onclick="copyToClipboard()">📋 Copier au presse-papiers</button>
     </div>
     <div class="form-group">
@@ -688,12 +690,12 @@ function updateExerciseList(restoring) {
           ${[0,1].map(k => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:rgba(220,50,50,0.08);border-radius:6px;padding:6px 8px;">
               <input type="number" id="poids${i}k${k}" placeholder="kg" min="0" step="0.5"
-                style="width:58px;padding:5px 4px;font-size:13px;text-align:center;border:1px solid rgba(200,50,50,0.4);border-radius:6px;"
+                style="width:58px;padding:5px 4px;font-size:16px;text-align:center;border:1px solid rgba(200,50,50,0.4);border-radius:6px;"
                 oninput="saveDraftForm()">
               <span style="font-size:11px;color:#888;white-space:nowrap;">×</span>
               ${[0,1,2,3].map(j => `
                 <input type="number" id="reps${i}k${k}s${j}" placeholder="—" min="0"
-                  style="width:40px;padding:5px 2px;font-size:13px;text-align:center;border-radius:6px;"
+                  style="width:40px;padding:5px 2px;font-size:16px;text-align:center;border-radius:6px;"
                   oninput="saveDraftForm()">
               `).join('')}
             </div>
@@ -748,8 +750,11 @@ function renderSessionsList() {
   noSessions.style.display = 'none';
   const sorted = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
   list.innerHTML = sorted.map(s => `
-    <div class="session-card">
-      <div class="session-header">${s.type} - ${s.date}</div>
+    <div class="session-card" id="card-${s.id}">
+      <div class="session-header">
+        <input type="checkbox" class="session-checkbox" id="chk-${s.id}" onchange="onSessionCheckChange(${s.id}, this)">
+        <label for="chk-${s.id}" style="cursor:pointer;flex:1;">${s.type} - ${s.date}</label>
+      </div>
       <div class="session-info">${s.exercises.length} exercice(s)</div>
       <div class="session-exos">
         ${s.exercises.map(e => `${e.exo}${e.variation ? ' (' + e.variation + ')' : ''} - ${(e.lignes ? e.lignes.reduce((a,l)=>a+(l.reps||[]).length,0) : (e.reps||[]).length)} séries`).join('<br>')}
@@ -761,9 +766,26 @@ function renderSessionsList() {
 
 function deleteSession(id) {
   if (!confirm('Supprimer cette séance ?')) return;
+  if (selectedSessionId === id) selectedSessionId = null;
   sessions = sessions.filter(s => s.id !== id);
   saveToStorage();
   renderSessionsList();
+}
+
+let selectedSessionId = null;
+
+function onSessionCheckChange(id, checkbox) {
+  // Uncheck all others
+  document.querySelectorAll('.session-checkbox').forEach(chk => {
+    if (chk.id !== checkbox.id) chk.checked = false;
+  });
+  document.querySelectorAll('.session-card').forEach(card => card.classList.remove('selected'));
+  if (checkbox.checked) {
+    selectedSessionId = id;
+    document.getElementById('card-' + id).classList.add('selected');
+  } else {
+    selectedSessionId = null;
+  }
 }
 
 function buildCalcTSV(sessionsToExport) {
@@ -799,14 +821,28 @@ function updateDataPreview() {
 }
 
 function copyToClipboard() {
-  const text = document.getElementById('dataPreview').value;
+  let sessionsToExport;
+  if (selectedSessionId !== null) {
+    sessionsToExport = sessions.filter(s => s.id === selectedSessionId);
+  } else {
+    sessionsToExport = sessions;
+  }
+  if (sessionsToExport.length === 0) {
+    alert('Aucune séance à copier.');
+    return;
+  }
+  const text = buildCalcTSV(sessionsToExport);
   navigator.clipboard.writeText(text).then(() => {
     const msg = document.getElementById('successMsg');
     msg.classList.add('show');
     setTimeout(() => msg.classList.remove('show'), 2000);
   }).catch(() => {
-    document.getElementById('dataPreview').select();
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
     document.execCommand('copy');
+    document.body.removeChild(ta);
   });
 }
 
