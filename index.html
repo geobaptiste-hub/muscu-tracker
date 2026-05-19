@@ -480,6 +480,27 @@ function getSavedClientId() {
   return localStorage.getItem('muscuGDriveClientId') || '';
 }
 
+// Sauvegarde le token et son expiration dans localStorage
+function saveToken(token, expiresIn) {
+  const expiresAt = Date.now() + (expiresIn - 60) * 1000; // 1 min de marge
+  localStorage.setItem('muscuGDriveToken', token);
+  localStorage.setItem('muscuGDriveTokenExpiry', expiresAt.toString());
+}
+
+// Récupère le token s'il est encore valide, sinon null
+function getSavedToken() {
+  const token = localStorage.getItem('muscuGDriveToken');
+  const expiry = parseInt(localStorage.getItem('muscuGDriveTokenExpiry') || '0');
+  if (token && Date.now() < expiry) return token;
+  return null;
+}
+
+// Efface le token sauvegardé (déconnexion ou expiration)
+function clearSavedToken() {
+  localStorage.removeItem('muscuGDriveToken');
+  localStorage.removeItem('muscuGDriveTokenExpiry');
+}
+
 function showConfigOverlay() {
   document.getElementById('clientIdInput').value = getSavedClientId();
   document.getElementById('configOverlay').classList.add('show');
@@ -526,6 +547,17 @@ async function initGoogleAuth() {
 
   setSyncState('syncing', 'Connexion à Google…');
 
+  // 1. Tente de réutiliser le token sauvegardé s'il est encore valide
+  const savedToken = getSavedToken();
+  if (savedToken) {
+    accessToken = savedToken;
+    gdriveReady = true;
+    setSyncState('syncing', 'Chargement des données…');
+    await pullFromDrive();
+    return;
+  }
+
+  // 2. Sinon, demande un nouveau token (sans popup si déjà autorisé)
   try {
     await loadGISScript();
 
@@ -534,17 +566,19 @@ async function initGoogleAuth() {
       scope: SCOPES,
       callback: async (resp) => {
         if (resp.error) {
+          clearSavedToken();
           setSyncState('error', 'Erreur d\'authentification : ' + resp.error);
           return;
         }
         accessToken = resp.access_token;
+        saveToken(resp.access_token, resp.expires_in || 3600); // sauvegarde pour la prochaine fois
         gdriveReady = true;
         setSyncState('syncing', 'Chargement des données…');
         await pullFromDrive();
       },
     });
 
-    tokenClient.requestAccessToken({ prompt: '' });
+    tokenClient.requestAccessToken({ prompt: '' }); // prompt vide = pas de popup si déjà autorisé
   } catch (e) {
     setSyncState('error', 'Impossible de charger Google. Vérifie ta connexion.');
     console.error(e);
@@ -582,6 +616,16 @@ async function pullFromDrive() {
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
+    // Token expiré → on efface et on relance l'auth
+    if (res.status === 401) {
+      clearSavedToken();
+      gdriveReady = false;
+      accessToken = null;
+      setSyncState('error', 'Session expirée, reconnexion…');
+      setTimeout(initGoogleAuth, 1000);
+      return;
+    }
+
     if (res.status === 200) {
       const text = await res.text();
       if (text && text.trim().startsWith('{')) {
@@ -608,11 +652,22 @@ async function pushToDrive() {
   try {
     const fileId = await getOrCreateFileId();
     const payload = JSON.stringify({ sessions, updatedAt: new Date().toISOString() });
-    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: payload,
     });
+
+    // Token expiré → on efface et on relance l'auth
+    if (res.status === 401) {
+      clearSavedToken();
+      gdriveReady = false;
+      accessToken = null;
+      setSyncState('error', 'Session expirée, reconnexion…');
+      setTimeout(initGoogleAuth, 1000);
+      return;
+    }
+
     setSyncState('connected', 'Synchronisé · ' + nowStr());
   } catch (e) {
     setSyncState('error', 'Erreur d\'envoi vers Drive');
