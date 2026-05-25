@@ -203,6 +203,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('form')">Saisie</button>
+    <button class="tab-btn" onclick="switchTab('calc')">Calculateur</button>
     <button class="tab-btn" onclick="switchTab('sessions')">Historique</button>
     <button class="tab-btn" onclick="switchTab('export')">Export</button>
     <button class="tab-btn" onclick="switchTab('settings')">Paramètres</button>
@@ -254,6 +255,24 @@
       <button class="btn-primary" style="flex: 1; padding: 12px; font-weight: 600;" onclick="saveSession(true)">✓ Sauv. & Effacer</button>
       <button class="btn-danger" style="flex: 1; padding: 12px; font-weight: 600;" onclick="clearForm()">Effacer</button>
     </div>
+  </div>
+
+  <!-- TAB: CALCULATEUR -->
+  <div id="calc" class="tab-content">
+    <div class="settings-section" style="margin-bottom: 1rem;">
+      <div class="settings-title">📊 Séance en cours</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding: 14px 0; border-bottom: 0.5px solid rgba(0,0,0,0.08);">
+        <span style="font-size: 15px; font-weight: 500;">Total de reps</span>
+        <span id="calcTotalReps" style="font-size: 24px; font-weight: 700; min-width: 80px; text-align: right;">—</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding: 14px 0;">
+        <span style="font-size: 15px; font-weight: 500;">Total de poids soulevé</span>
+        <span id="calcTotalWeight" style="font-size: 24px; font-weight: 700; min-width: 80px; text-align: right;">—</span>
+      </div>
+    </div>
+    <p style="font-size: 12px; color: #888; text-align: center; line-height: 1.6;">
+      Les valeurs se mettent à jour automatiquement<br>selon ce que tu saisis dans l'onglet Saisie.
+    </p>
   </div>
 
   <!-- TAB: SESSIONS -->
@@ -376,9 +395,9 @@
 // ════════════════════════════════════════════════════════
 const EXERCISE_LISTS = {
   P: ['EC', 'EC pecs machine', 'EC pecs machine double', 'EC poulie haute', 'EC poulie basse', 'EC el bas', 'EC el haut', 'DC', 'DCH', 'DCHD', 'DCHI', 'DD', 'DI', 'Press pecs cv bi', 'Press pecs cv uni', 'Pull over'],
-  F: ['HT poulie', 'Fentes', 'Fentes marchées', 'Fentes SDT', 'SDT', 'Mollets debout', 'Relevé lombaire', 'Hip trust', 'Mollets assis', 'Leg curl'],
+  F: ['HT poulie', 'Fentes', 'Fentes marchées', 'Fentes SDT', 'SDT', 'Mollets debout', 'Mollets assis', 'Leg curl'],
   D: ['Tractions', 'Tirage conv', 'Tirage conv uni', 'Tirage haltère uni', 'Tirage machine double', 'Rowing', 'Tirage bas', 'Tirage bas uni', 'Tirage haut', 'Tirage haut uni', 'DMM', 'DM', 'EL Pl basse', 'ELH', 'EL elast', 'EPH', 'EP elast', 'Shrug', 'Ecarté machine double', 'Rowing menton'],
-  Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis'],
+  Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Leg curl', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis'],
 };
 const VARIATIONS = {
   P: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
@@ -428,6 +447,7 @@ function saveDraftForm() {
   if (draft) {
     localStorage.setItem('muscuDraft', JSON.stringify(draft));
   }
+  updateCalc();
 }
 
 // Efface le brouillon (après sauvegarde ou effacement manuel)
@@ -739,13 +759,43 @@ function init() {
   }
 }
 
-function switchTab(tab) {
+function updateCalc() {
+  let totalReps = 0;
+  let totalWeight = 0;
+  let hasData = false;
+
+  for (let i = 0; i < 6; i++) {
+    for (let k = 0; k < 2; k++) {
+      const poidsEl = document.getElementById(`poids${i}k${k}`);
+      if (!poidsEl) continue;
+      const poids = parseFloat(poidsEl.value) || 0;
+      for (let j = 0; j < 4; j++) {
+        const repEl = document.getElementById(`reps${i}k${k}s${j}`);
+        if (!repEl) continue;
+        const reps = parseInt(repEl.value);
+        if (!isNaN(reps) && reps > 0) {
+          totalReps += reps;
+          totalWeight += poids * reps;
+          hasData = true;
+        }
+      }
+    }
+  }
+
+  const repsEl = document.getElementById('calcTotalReps');
+  const weightEl = document.getElementById('calcTotalWeight');
+  if (repsEl) repsEl.textContent = hasData ? totalReps.toLocaleString('fr-FR') : '—';
+  if (weightEl) weightEl.textContent = hasData ? totalWeight.toLocaleString('fr-FR') + ' kg' : '—';
+}
+
+
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
   document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
   if (tab === 'sessions') renderSessionsList();
   if (tab === 'export') updateDataPreview();
+  if (tab === 'calc') updateCalc();
 }
 
 // Le paramètre `restoring` évite de re-sauvegarder le draft pendant la restauration
