@@ -262,6 +262,14 @@
     <div class="settings-section" style="margin-bottom: 1rem;">
       <div class="settings-title">📊 Séance en cours</div>
       <div style="display:flex; align-items:center; justify-content:space-between; padding: 14px 0; border-bottom: 0.5px solid rgba(0,0,0,0.08);">
+        <span style="font-size: 15px; font-weight: 500;">Nombre d'exos</span>
+        <span id="calcNbExos" style="font-size: 24px; font-weight: 700; min-width: 80px; text-align: right;">—</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding: 14px 0; border-bottom: 0.5px solid rgba(0,0,0,0.08);">
+        <span style="font-size: 15px; font-weight: 500;">Total de séries</span>
+        <span id="calcTotalSeries" style="font-size: 24px; font-weight: 700; min-width: 80px; text-align: right;">—</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding: 14px 0; border-bottom: 0.5px solid rgba(0,0,0,0.08);">
         <span style="font-size: 15px; font-weight: 500;">Total de reps</span>
         <span id="calcTotalReps" style="font-size: 24px; font-weight: 700; min-width: 80px; text-align: right;">—</span>
       </div>
@@ -397,7 +405,7 @@ const EXERCISE_LISTS = {
   P: ['EC', 'EC pecs machine', 'EC pecs machine double', 'EC poulie haute', 'EC poulie basse', 'EC el bas', 'EC el haut', 'DC', 'DCH', 'DCHD', 'DCHI', 'DD', 'DI', 'Press pecs cv bi', 'Press pecs cv uni', 'Pull over'],
   F: ['HT poulie', 'Fentes', 'Fentes marchées', 'Fentes SDT', 'SDT', 'Mollets debout', 'Mollets assis', 'Leg curl'],
   D: ['Tractions', 'Tirage conv', 'Tirage conv uni', 'Tirage haltère uni', 'Tirage machine double', 'Rowing', 'Tirage bas', 'Tirage bas uni', 'Tirage haut', 'Tirage haut uni', 'DMM', 'DM', 'EL Pl basse', 'ELH', 'EL elast', 'EPH', 'EP elast', 'Shrug', 'Ecarté machine double', 'Rowing menton'],
-  Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis'],
+  Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Leg curl', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis'],
 };
 const VARIATIONS = {
   P: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
@@ -762,6 +770,8 @@ function init() {
 function updateCalc() {
   let totalReps = 0;
   let totalWeight = 0;
+  let totalSeries = 0;
+  let nbExos = 0;
   let hasData = false;
 
   for (let i = 0; i < 6; i++) {
@@ -769,6 +779,7 @@ function updateCalc() {
       const poidsEl = document.getElementById(`poids${i}k${k}`);
       if (!poidsEl) continue;
       const poids = parseFloat(poidsEl.value) || 0;
+      let exoHasReps = false;
       for (let j = 0; j < 4; j++) {
         const repEl = document.getElementById(`reps${i}k${k}s${j}`);
         if (!repEl) continue;
@@ -776,14 +787,21 @@ function updateCalc() {
         if (!isNaN(reps) && reps > 0) {
           totalReps += reps;
           totalWeight += poids * reps;
+          totalSeries++;
+          exoHasReps = true;
           hasData = true;
         }
       }
+      if (exoHasReps) nbExos++;
     }
   }
 
+  const exosEl = document.getElementById('calcNbExos');
+  const seriesEl = document.getElementById('calcTotalSeries');
   const repsEl = document.getElementById('calcTotalReps');
   const weightEl = document.getElementById('calcTotalWeight');
+  if (exosEl) exosEl.textContent = hasData ? nbExos : '—';
+  if (seriesEl) seriesEl.textContent = hasData ? totalSeries : '—';
   if (repsEl) repsEl.textContent = hasData ? totalReps.toLocaleString('fr-FR') : '—';
   if (weightEl) weightEl.textContent = hasData ? totalWeight.toLocaleString('fr-FR') + ' kg' : '—';
 }
