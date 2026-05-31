@@ -775,11 +775,12 @@ function updateCalc() {
   let hasData = false;
 
   for (let i = 0; i < 6; i++) {
+    let exoHasData = false;
     for (let k = 0; k < 2; k++) {
       const poidsEl = document.getElementById(`poids${i}k${k}`);
       if (!poidsEl) continue;
       const poids = parseFloat(poidsEl.value) || 0;
-      let exoHasReps = false;
+      let ligneHasReps = false;
       for (let j = 0; j < 4; j++) {
         const repEl = document.getElementById(`reps${i}k${k}s${j}`);
         if (!repEl) continue;
@@ -788,12 +789,13 @@ function updateCalc() {
           totalReps += reps;
           totalWeight += poids * reps;
           totalSeries++;
-          exoHasReps = true;
+          ligneHasReps = true;
+          exoHasData = true;
           hasData = true;
         }
       }
-      if (exoHasReps) nbExos++;
     }
+    if (exoHasData) nbExos++;
   }
 
   const exosEl = document.getElementById('calcNbExos');
