@@ -278,6 +278,17 @@
         <span id="calcTotalWeight" style="font-size: 24px; font-weight: 700; min-width: 80px; text-align: right;">—</span>
       </div>
     </div>
+    <div class="settings-section" style="margin-top: 1rem; margin-bottom: 1rem;">
+      <div class="settings-title">⏱ Chronomètre</div>
+      <div style="text-align: center; padding: 12px 0 16px;">
+        <div id="chronoDisplay" style="font-size: 52px; font-weight: 700; letter-spacing: 4px; font-variant-numeric: tabular-nums; font-family: -apple-system-ui-monospaced, 'Courier New', monospace;">00:00</div>
+        <div id="chronoMax" style="font-size: 11px; color: #888; margin-top: 4px; display: none;">Limite 1h atteinte — remis à zéro</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="chronoStartStop" onclick="chronoToggle()" style="flex: 2; padding: 12px; font-weight: 600; font-size: 15px;">▶ Démarrer</button>
+        <button onclick="chronoReset()" style="flex: 1; padding: 12px; font-weight: 500; font-size: 14px; color: #d32f2f; border-color: rgba(211,47,47,0.3);">✕ Réinitialiser</button>
+      </div>
+    </div>
     <p style="font-size: 12px; color: #888; text-align: center; line-height: 1.6;">
       Les valeurs se mettent à jour automatiquement<br>selon ce que tu saisis dans l'onglet Saisie.
     </p>
@@ -1056,6 +1067,107 @@ function resetAllData() {
   alert('✓ Données réinitialisées');
   location.reload();
 }
+
+// ===== CHRONOMÈTRE =====
+const CHRONO_MAX = 3600; // 1h en secondes
+
+let chronoInterval = null;
+
+function chronoGetState() {
+  const running = localStorage.getItem('chronoRunning') === '1';
+  const startTs = parseInt(localStorage.getItem('chronoStartTs') || '0');
+  const base = parseInt(localStorage.getItem('chronoBase') || '0');
+  return { running, startTs, base };
+}
+
+function chronoSaveState(running, startTs, base) {
+  localStorage.setItem('chronoRunning', running ? '1' : '0');
+  localStorage.setItem('chronoStartTs', startTs.toString());
+  localStorage.setItem('chronoBase', base.toString());
+}
+
+function chronoGetElapsed() {
+  const { running, startTs, base } = chronoGetState();
+  if (!running) return base;
+  return base + Math.floor((Date.now() - startTs) / 1000);
+}
+
+function chronoFormatTime(secs) {
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  return m + ':' + s;
+}
+
+function chronoUpdateDisplay() {
+  let elapsed = chronoGetElapsed();
+  const maxMsg = document.getElementById('chronoMax');
+
+  if (elapsed >= CHRONO_MAX) {
+    chronoReset();
+    if (maxMsg) { maxMsg.style.display = 'block'; setTimeout(() => { maxMsg.style.display = 'none'; }, 4000); }
+    return;
+  }
+
+  const display = document.getElementById('chronoDisplay');
+  if (display) display.textContent = chronoFormatTime(elapsed);
+}
+
+function chronoStartInterval() {
+  if (chronoInterval) return;
+  chronoInterval = setInterval(chronoUpdateDisplay, 500);
+}
+
+function chronoStopInterval() {
+  if (chronoInterval) { clearInterval(chronoInterval); chronoInterval = null; }
+}
+
+function chronoUpdateBtn() {
+  const { running } = chronoGetState();
+  const btn = document.getElementById('chronoStartStop');
+  if (btn) btn.textContent = running ? '⏸ Pause' : '▶ Démarrer';
+}
+
+function chronoToggle() {
+  const { running, startTs, base } = chronoGetState();
+  if (running) {
+    const elapsed = base + Math.floor((Date.now() - startTs) / 1000);
+    chronoSaveState(false, 0, elapsed);
+    chronoStopInterval();
+  } else {
+    chronoSaveState(true, Date.now(), base);
+    chronoStartInterval();
+  }
+  chronoUpdateBtn();
+  chronoUpdateDisplay();
+}
+
+function chronoReset() {
+  chronoSaveState(false, 0, 0);
+  chronoStopInterval();
+  chronoUpdateBtn();
+  const display = document.getElementById('chronoDisplay');
+  if (display) display.textContent = '00:00';
+}
+
+// Gestion arrière-plan : Page Visibility API
+document.addEventListener('visibilitychange', function() {
+  const { running } = chronoGetState();
+  if (!document.hidden && running) {
+    chronoUpdateDisplay();
+    chronoStartInterval();
+  } else if (document.hidden) {
+    chronoStopInterval();
+  }
+});
+
+// Init chrono au chargement
+window.addEventListener('DOMContentLoaded', function() {
+  const { running } = chronoGetState();
+  chronoUpdateDisplay();
+  chronoUpdateBtn();
+  if (running) chronoStartInterval();
+});
+// ===== FIN CHRONOMÈTRE =====
 
 // ===== SPLASH SCREEN =====
 window.addEventListener('DOMContentLoaded', function() {
