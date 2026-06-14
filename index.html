@@ -8,115 +8,138 @@
   <link rel="apple-touch-icon" href="Logo 180 x 180.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    html, body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: #fff;
-      color: #1a1a1a;
-    }
-    
-    @media (prefers-color-scheme: dark) {
-      html, body { background: #1a1a1a; color: #f5f5f5; }
-    }
-    
+    html, body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: #fff; color: #1a1a1a; }
+    @media (prefers-color-scheme: dark) { html, body { background: #1a1a1a; color: #f5f5f5; } }
     .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
-    
     .header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
     .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 12px; color: #888; }
-    
-    .sync-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 10px;
-      margin-bottom: 1.5rem;
-      font-size: 13px;
-      border: 0.5px solid rgba(0,0,0,0.1);
-      background: rgba(0,0,0,0.02);
-    }
-    @media (prefers-color-scheme: dark) {
-      .sync-bar { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); }
-    }
-    .sync-dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-      background: #ccc;
-    }
+    .sync-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; margin-bottom: 1.5rem; font-size: 13px; border: 0.5px solid rgba(0,0,0,0.1); background: rgba(0,0,0,0.02); }
+    @media (prefers-color-scheme: dark) { .sync-bar { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #ccc; }
     .sync-dot.connected { background: #4caf50; }
     .sync-dot.syncing { background: #ff9800; animation: pulse 1s infinite; }
     .sync-dot.error { background: #f44336; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     .sync-label { flex: 1; color: #666; }
     @media (prefers-color-scheme: dark) { .sync-label { color: #aaa; } }
-    .sync-btn {
-      padding: 5px 12px; font-size: 12px; font-weight: 600;
-      border-radius: 6px; border: 0.5px solid rgba(0,0,0,0.15);
-      background: #fff; cursor: pointer; white-space: nowrap;
-    }
-    @media (prefers-color-scheme: dark) {
-      .sync-btn { background: #2a2a2a; border-color: rgba(255,255,255,0.15); color: #f5f5f5; }
-    }
+    .sync-btn { padding: 5px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 0.5px solid rgba(0,0,0,0.15); background: #fff; cursor: pointer; white-space: nowrap; }
+    @media (prefers-color-scheme: dark) { .sync-btn { background: #2a2a2a; border-color: rgba(255,255,255,0.15); color: #f5f5f5; } }
     .sync-btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-    @media (prefers-color-scheme: dark) {
-      .sync-btn.primary { background: #f5f5f5; color: #1a1a1a; }
-    }
-
-    .overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5); z-index: 100;
-      align-items: center; justify-content: center; padding: 1rem;
-    }
+    @media (prefers-color-scheme: dark) { .sync-btn.primary { background: #f5f5f5; color: #1a1a1a; } }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
     .overlay.show { display: flex; }
-    .overlay-box {
-      background: #fff; border-radius: 16px; padding: 1.5rem;
-      width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
-    }
-    @media (prefers-color-scheme: dark) {
-      .overlay-box { background: #1e1e1e; color: #f5f5f5; }
-    }
+    .overlay-box { background: #fff; border-radius: 16px; padding: 1.5rem; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
+    @media (prefers-color-scheme: dark) { .overlay-box { background: #1e1e1e; color: #f5f5f5; } }
     .overlay-title { font-size: 18px; font-weight: 700; margin-bottom: 1rem; }
-    .overlay-step {
-      background: rgba(0,0,0,0.04); border-radius: 10px;
-      padding: 12px 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.6;
-    }
+    .overlay-step { background: rgba(0,0,0,0.04); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.6; }
     @media (prefers-color-scheme: dark) { .overlay-step { background: rgba(255,255,255,0.06); } }
     .overlay-step b { font-weight: 600; }
     .overlay-step a { color: #1a73e8; }
-    .overlay-step code {
-      background: rgba(0,0,0,0.08); border-radius: 4px;
-      padding: 1px 5px; font-family: monospace; font-size: 12px;
-    }
+    .overlay-step code { background: rgba(0,0,0,0.08); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }
     @media (prefers-color-scheme: dark) { .overlay-step code { background: rgba(255,255,255,0.12); } }
-    .step-num {
-      display: inline-block; background: #1a1a1a; color: #fff;
-      border-radius: 50%; width: 20px; height: 20px;
-      line-height: 20px; text-align: center; font-size: 11px; font-weight: 700;
-      margin-right: 6px; flex-shrink: 0;
-    }
+    .step-num { display: inline-block; background: #1a1a1a; color: #fff; border-radius: 50%; width: 20px; height: 20px; line-height: 20px; text-align: center; font-size: 11px; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
     @media (prefers-color-scheme: dark) { .step-num { background: #f5f5f5; color: #1a1a1a; } }
-
     .tabs { display: flex; gap: 4px; margin-bottom: 2rem; border-bottom: 0.5px solid rgba(0,0,0,0.1); overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .tab-btn { flex-shrink: 0; padding: 10px 10px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 500; color: #888; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
     .tab-btn.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
     @media (prefers-color-scheme: dark) { .tab-btn.active { color: #f5f5f5; border-bottom-color: #f5f5f5; } }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-    
     .form-group { margin-bottom: 1.5rem; }
     label { display: block; font-size: 13px; font-weight: 600; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
     input, select, textarea { width: 100%; padding: 11px 12px; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 8px; font-family: inherit; font-size: 16px; background: #fff; color: #1a1a1a; transition: all 0.2s; }
-    /* iOS anti-zoom : force 16px sur tous les champs quoi qu'il arrive */
     input[type], select, textarea { font-size: 16px !important; }
     @media (prefers-color-scheme: dark) { input, select, textarea { background: #2a2a2a; color: #f5f5f5; border-color: rgba(255,255,255,0.15); } }
     input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(0,0,0,0.3); background: #f8f8f8; }
     @media (prefers-color-scheme: dark) { input:focus, select:focus, textarea:focus { background: #333; border-color: rgba(255,255,255,0.3); } }
-    
-    .exercise-block { background: rgba(0,0,0,0.03); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 0.5px solid rgba(0,0,0,0.1); }
+
+    /* ===== EXERCISE BLOCK ===== */
+    .exercise-block {
+      background: rgba(0,0,0,0.03);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 0.5px solid rgba(0,0,0,0.1);
+      overflow: hidden;
+      transition: all 0.2s;
+    }
     @media (prefers-color-scheme: dark) { .exercise-block { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
-    .exercise-title { font-weight: 600; font-size: 13px; margin-bottom: 12px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.5px; }
-    @media (prefers-color-scheme: dark) { .exercise-title { color: #f5f5f5; } }
-    
+
+    /* Header cliquable */
+    .exercise-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      gap: 8px;
+    }
+    .exercise-header:active { opacity: 0.7; }
+
+    .exercise-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .exercise-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .exercise-name-preview {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (prefers-color-scheme: dark) { .exercise-name-preview { color: #f5f5f5; } }
+
+    .exercise-name-preview.empty {
+      color: #aaa;
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    .exercise-chevron {
+      font-size: 11px;
+      color: #888;
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+
+    /* État ouvert */
+    .exercise-block:not(.collapsed) .exercise-chevron { transform: rotate(180deg); }
+
+    /* Corps du bloc : masqué quand collapsed */
+    .exercise-body {
+      padding: 0 12px 12px;
+      display: block;
+    }
+    .exercise-block.collapsed .exercise-body {
+      display: none;
+    }
+
+    /* Indicateur de données dans l'état réduit */
+    .exercise-data-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #4caf50;
+      flex-shrink: 0;
+      display: none;
+    }
+    .exercise-data-dot.has-data { display: block; }
+
     .btn-group { display: flex; gap: 8px; margin-top: 12px; }
     button { padding: 11px 16px; border: 0.5px solid rgba(0,0,0,0.2); background: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; color: #1a1a1a; transition: all 0.2s; }
     @media (prefers-color-scheme: dark) { button { background: #2a2a2a; color: #f5f5f5; border-color: rgba(255,255,255,0.2); } }
@@ -128,7 +151,6 @@
     .btn-primary:hover { opacity: 0.9; }
     .btn-danger { color: #d32f2f; border-color: rgba(211,47,47,0.3); }
     .btn-danger:hover { background: rgba(211,47,47,0.1); }
-    
     .sessions-list { display: flex; flex-direction: column; gap: 12px; }
     .session-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px; transition: border-color 0.2s, box-shadow 0.2s; }
     .session-card.selected { border-color: #1a1a1a; box-shadow: 0 0 0 1px #1a1a1a; }
@@ -138,56 +160,32 @@
     .session-checkbox { width: 18px; height: 18px; accent-color: #1a1a1a; cursor: pointer; flex-shrink: 0; }
     .session-info { font-size: 12px; color: #888; margin-bottom: 8px; }
     .session-exos { font-size: 12px; color: #888; line-height: 1.6; }
-    
     .export-section { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; border: 0.5px solid rgba(0,0,0,0.1); }
     @media (prefers-color-scheme: dark) { .export-section { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
     .export-title { font-weight: 600; margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
-    
     .settings-section { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; border: 0.5px solid rgba(0,0,0,0.1); }
     @media (prefers-color-scheme: dark) { .settings-section { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); } }
     .settings-title { font-weight: 600; margin-bottom: 1rem; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
-    
     .exercise-list-item { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
     @media (prefers-color-scheme: dark) { .exercise-list-item { background: #2a2a2a; border-color: rgba(255,255,255,0.1); } }
     .add-exercise-input { display: flex; gap: 8px; margin-bottom: 1rem; }
     .add-exercise-input input { flex: 1; }
-    
     .success-msg { background: rgba(76,175,80,0.1); color: #4caf50; padding: 12px; border-radius: 8px; margin-bottom: 1rem; font-size: 13px; display: none; border: 0.5px solid rgba(76,175,80,0.3); }
     .success-msg.show { display: block; }
     .section-heading { font-weight: 600; font-size: 13px; margin: 1.5rem 0 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .no-data { text-align: center; color: #888; padding: 2rem 1rem; font-size: 13px; }
 
     /* ===== SPLASH SCREEN ===== */
-    #splash {
-      position: fixed;
-      inset: 0;
-      background: #00275E;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      opacity: 1;
-      transition: opacity 0.4s ease;
-    }
-    #splash.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-    #splash img {
-      width: 220px;
-      height: 220px;
-      object-fit: contain;
-    }
-    /* ===== FIN SPLASH SCREEN ===== */
+    #splash { position: fixed; inset: 0; background: #00275E; display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 1; transition: opacity 0.4s ease; }
+    #splash.fade-out { opacity: 0; pointer-events: none; }
+    #splash img { width: 220px; height: 220px; object-fit: contain; }
   </style>
 </head>
 <body>
 
-<!-- ===== SPLASH SCREEN ===== -->
 <div id="splash">
   <img src="Logo 512 512 shaka V3.png" alt="Muscu Tracker">
 </div>
-<!-- ===== FIN SPLASH SCREEN ===== -->
 
 <div class="container">
   <div class="header">
@@ -326,7 +324,6 @@
       <button style="width: 100%; margin-bottom: 8px;" onclick="forcePull()">⬇️ Charger depuis Drive</button>
       <button style="width: 100%; margin-bottom: 8px;" onclick="forcePush()">⬆️ Envoyer vers Drive</button>
     </div>
-
     <div class="settings-section">
       <div class="settings-title">Gérer les exercices</div>
       <div class="section-heading">Pecs</div>
@@ -354,7 +351,6 @@
         <button onclick="addExercise('Q')">+</button>
       </div>
     </div>
-
     <button style="width: 100%; font-weight: 600;" onclick="resetAllData()">🗑️ Réinitialiser toutes les données</button>
   </div>
 </div>
@@ -363,48 +359,17 @@
 <div class="overlay" id="configOverlay">
   <div class="overlay-box">
     <div class="overlay-title">🔑 Configuration Google Drive</div>
-
-    <div class="overlay-step">
-      <span class="step-num">1</span>
-      <b>Va sur</b> <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a><br>
-      Connecte-toi avec ton compte Google habituel.
-    </div>
-
-    <div class="overlay-step">
-      <span class="step-num">2</span>
-      <b>Crée un projet</b> : clique sur le menu déroulant en haut ("Sélectionner un projet") → <b>Nouveau projet</b> → nomme-le <code>muscu-tracker</code> → <b>Créer</b>.
-    </div>
-
-    <div class="overlay-step">
-      <span class="step-num">3</span>
-      <b>Active l'API Drive</b> : menu hamburger ☰ → <b>API et services</b> → <b>Bibliothèque</b> → recherche <code>Google Drive API</code> → clique dessus → <b>Activer</b>.
-    </div>
-
-    <div class="overlay-step">
-      <span class="step-num">4</span>
-      <b>Crée un identifiant OAuth</b> : <b>API et services</b> → <b>Identifiants</b> → <b>+ Créer des identifiants</b> → <b>ID client OAuth</b>.<br>
-      • Type d'application : <b>Application Web</b><br>
-      • Nom : <code>Muscu Tracker</code><br>
-      • Origines JS autorisées : clique <b>+ Ajouter une URI</b> → tape <code>null</code> (pour les fichiers locaux)<br>
-      → <b>Créer</b>
-    </div>
-
-    <div class="overlay-step">
-      <span class="step-num">5</span>
-      <b>Configure l'écran de consentement</b> (si demandé) : <b>API et services</b> → <b>Écran de consentement OAuth</b> → Type : <b>Externe</b> → remplis juste le nom de l'app (<code>Muscu Tracker</code>) et ton e-mail → <b>Enregistrer</b>. Puis dans <b>Utilisateurs tests</b>, ajoute ton adresse Gmail.
-    </div>
-
-    <div class="overlay-step">
-      <span class="step-num">6</span>
-      <b>Copie ton Client ID</b> : retourne dans <b>Identifiants</b>, clique sur ton client OAuth → copie le champ <b>ID client</b> (se termine par <code>.apps.googleusercontent.com</code>).
-    </div>
-
+    <div class="overlay-step"><span class="step-num">1</span><b>Va sur</b> <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a><br>Connecte-toi avec ton compte Google habituel.</div>
+    <div class="overlay-step"><span class="step-num">2</span><b>Crée un projet</b> : clique sur le menu déroulant en haut ("Sélectionner un projet") → <b>Nouveau projet</b> → nomme-le <code>muscu-tracker</code> → <b>Créer</b>.</div>
+    <div class="overlay-step"><span class="step-num">3</span><b>Active l'API Drive</b> : menu hamburger ☰ → <b>API et services</b> → <b>Bibliothèque</b> → recherche <code>Google Drive API</code> → clique dessus → <b>Activer</b>.</div>
+    <div class="overlay-step"><span class="step-num">4</span><b>Crée un identifiant OAuth</b> : <b>API et services</b> → <b>Identifiants</b> → <b>+ Créer des identifiants</b> → <b>ID client OAuth</b>.<br>• Type d'application : <b>Application Web</b><br>• Nom : <code>Muscu Tracker</code><br>• Origines JS autorisées : clique <b>+ Ajouter une URI</b> → tape <code>null</code> (pour les fichiers locaux)<br>→ <b>Créer</b></div>
+    <div class="overlay-step"><span class="step-num">5</span><b>Configure l'écran de consentement</b> (si demandé) : <b>API et services</b> → <b>Écran de consentement OAuth</b> → Type : <b>Externe</b> → remplis juste le nom de l'app (<code>Muscu Tracker</code>) et ton e-mail → <b>Enregistrer</b>. Puis dans <b>Utilisateurs tests</b>, ajoute ton adresse Gmail.</div>
+    <div class="overlay-step"><span class="step-num">6</span><b>Copie ton Client ID</b> : retourne dans <b>Identifiants</b>, clique sur ton client OAuth → copie le champ <b>ID client</b> (se termine par <code>.apps.googleusercontent.com</code>).</div>
     <div style="margin-bottom: 12px;">
       <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Colle ton Client ID ici</label>
       <input type="text" id="clientIdInput" placeholder="xxxxxxx.apps.googleusercontent.com" style="margin-bottom: 8px;">
       <button class="btn-primary" style="width: 100%; font-weight: 600;" onclick="saveClientId()">✓ Enregistrer et connecter</button>
     </div>
-
     <button style="width: 100%; color: #888; border-color: rgba(0,0,0,0.1);" onclick="closeConfigOverlay()">Annuler</button>
   </div>
 </div>
@@ -428,54 +393,89 @@ const VARIATIONS = {
 let sessions = [];
 
 // ════════════════════════════════════════════════════════
-//  SAUVEGARDE DU BROUILLON DE FORMULAIRE
+//  COLLAPSE / EXPAND EXERCICES
 // ════════════════════════════════════════════════════════
 
-// Collecte toutes les valeurs du formulaire en cours
+function toggleExercise(i) {
+  const block = document.getElementById('exoBlock' + i);
+  if (!block) return;
+  block.classList.toggle('collapsed');
+}
+
+// Met à jour le preview (nom affiché dans l'état réduit) + le point vert
+function updateExercisePreview(i) {
+  const exoEl = document.getElementById('exo' + i);
+  const preview = document.getElementById('exoPreview' + i);
+  const dot = document.getElementById('exoDot' + i);
+  if (!exoEl || !preview) return;
+
+  const name = exoEl.value;
+  if (name) {
+    preview.textContent = name;
+    preview.classList.remove('empty');
+  } else {
+    preview.textContent = 'Vide';
+    preview.classList.add('empty');
+  }
+
+  // Vérifie s'il y a des données saisies dans cet exercice
+  let hasData = false;
+  for (let k = 0; k < 2 && !hasData; k++) {
+    const poidsEl = document.getElementById('poids' + i + 'k' + k);
+    if (poidsEl && poidsEl.value) { hasData = true; break; }
+    for (let j = 0; j < 4; j++) {
+      const repEl = document.getElementById('reps' + i + 'k' + k + 's' + j);
+      if (repEl && repEl.value) { hasData = true; break; }
+    }
+  }
+  if (dot) dot.classList.toggle('has-data', hasData);
+}
+
+// ════════════════════════════════════════════════════════
+//  SAUVEGARDE DU BROUILLON
+// ════════════════════════════════════════════════════════
 function collectDraft() {
   const type = document.getElementById('sessionType').value;
   const date = document.getElementById('sessionDate').value;
   if (!type) return null;
-  const muscleGroup = type.charAt(0);
   const exercises = [];
   for (let i = 0; i < 6; i++) {
-    const exoEl = document.getElementById(`exo${i}`);
+    const exoEl = document.getElementById('exo' + i);
     if (!exoEl) break;
     const lignes = [];
     for (let k = 0; k < 2; k++) {
-      const poidsEl = document.getElementById(`poids${i}k${k}`);
+      const poidsEl = document.getElementById('poids' + i + 'k' + k);
       const poids = poidsEl ? poidsEl.value : '';
       const reps = [];
       for (let j = 0; j < 4; j++) {
-        const repEl = document.getElementById(`reps${i}k${k}s${j}`);
+        const repEl = document.getElementById('reps' + i + 'k' + k + 's' + j);
         reps.push(repEl ? repEl.value : '');
       }
       lignes.push({ poids, reps });
     }
+    const collapsed = document.getElementById('exoBlock' + i)
+      ? document.getElementById('exoBlock' + i).classList.contains('collapsed')
+      : true;
     exercises.push({
       exo: exoEl.value,
-      variation: (document.getElementById(`var${i}`) || {}).value || '',
+      variation: (document.getElementById('var' + i) || {}).value || '',
       lignes,
+      collapsed,
     });
   }
   return { type, date, exercises };
 }
 
-// Sauvegarde le brouillon dans localStorage — appelée à chaque input
 function saveDraftForm() {
   const draft = collectDraft();
-  if (draft) {
-    localStorage.setItem('muscuDraft', JSON.stringify(draft));
-  }
+  if (draft) localStorage.setItem('muscuDraft', JSON.stringify(draft));
   updateCalc();
+  // Met à jour tous les previews
+  for (let i = 0; i < 6; i++) updateExercisePreview(i);
 }
 
-// Efface le brouillon (après sauvegarde ou effacement manuel)
-function clearDraft() {
-  localStorage.removeItem('muscuDraft');
-}
+function clearDraft() { localStorage.removeItem('muscuDraft'); }
 
-// Restaure le brouillon au chargement
 function restoreDraft() {
   const raw = localStorage.getItem('muscuDraft');
   if (!raw) return;
@@ -483,26 +483,34 @@ function restoreDraft() {
   try { draft = JSON.parse(raw); } catch (e) { return; }
   if (!draft || !draft.type) return;
 
-  // Restaure le type (déclenche updateExerciseList sans sauvegarder le draft)
   document.getElementById('sessionType').value = draft.type;
   document.getElementById('sessionDate').value = draft.date || new Date().toISOString().split('T')[0];
-  updateExerciseList(true); // true = mode restauration (pas de saveDraft dedans)
+  updateExerciseList(true);
 
-  // Restaure les valeurs des exercices
   (draft.exercises || []).forEach((e, i) => {
-    const exoEl = document.getElementById(`exo${i}`);
-    const varEl = document.getElementById(`var${i}`);
+    const exoEl = document.getElementById('exo' + i);
+    const varEl = document.getElementById('var' + i);
+    const block = document.getElementById('exoBlock' + i);
     if (!exoEl) return;
     exoEl.value = e.exo || '';
     if (varEl) varEl.value = e.variation || '';
     (e.lignes || []).forEach((lg, k) => {
-      const poidsEl = document.getElementById(`poids${i}k${k}`);
+      const poidsEl = document.getElementById('poids' + i + 'k' + k);
       if (poidsEl) poidsEl.value = lg.poids || '';
       (lg.reps || []).forEach((r, j) => {
-        const repEl = document.getElementById(`reps${i}k${k}s${j}`);
+        const repEl = document.getElementById('reps' + i + 'k' + k + 's' + j);
         if (repEl) repEl.value = r || '';
       });
     });
+    // Restaure l'état collapsed (par défaut collapsed si non sauvegardé)
+    if (block) {
+      if (e.collapsed === false) {
+        block.classList.remove('collapsed');
+      } else {
+        block.classList.add('collapsed');
+      }
+    }
+    updateExercisePreview(i);
   });
 }
 
@@ -511,252 +519,123 @@ function restoreDraft() {
 // ════════════════════════════════════════════════════════
 const DRIVE_FILE_NAME = 'muscu_tracker_data.json';
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-
 let gdriveReady = false;
 let accessToken = null;
 let driveFileId = null;
 
-function getSavedClientId() {
-  return localStorage.getItem('muscuGDriveClientId') || '';
-}
-
-// Sauvegarde le token et son expiration dans localStorage
+function getSavedClientId() { return localStorage.getItem('muscuGDriveClientId') || ''; }
 function saveToken(token, expiresIn) {
-  const expiresAt = Date.now() + (expiresIn - 60) * 1000; // 1 min de marge
+  const expiresAt = Date.now() + (expiresIn - 60) * 1000;
   localStorage.setItem('muscuGDriveToken', token);
   localStorage.setItem('muscuGDriveTokenExpiry', expiresAt.toString());
 }
-
-// Récupère le token s'il est encore valide, sinon null
 function getSavedToken() {
   const token = localStorage.getItem('muscuGDriveToken');
   const expiry = parseInt(localStorage.getItem('muscuGDriveTokenExpiry') || '0');
   if (token && Date.now() < expiry) return token;
   return null;
 }
-
-// Efface le token sauvegardé (déconnexion ou expiration)
 function clearSavedToken() {
   localStorage.removeItem('muscuGDriveToken');
   localStorage.removeItem('muscuGDriveTokenExpiry');
 }
-
-function showConfigOverlay() {
-  document.getElementById('clientIdInput').value = getSavedClientId();
-  document.getElementById('configOverlay').classList.add('show');
-}
-function closeConfigOverlay() {
-  document.getElementById('configOverlay').classList.remove('show');
-}
-
+function showConfigOverlay() { document.getElementById('clientIdInput').value = getSavedClientId(); document.getElementById('configOverlay').classList.add('show'); }
+function closeConfigOverlay() { document.getElementById('configOverlay').classList.remove('show'); }
 function saveClientId() {
   const id = document.getElementById('clientIdInput').value.trim();
-  if (!id || !id.includes('.apps.googleusercontent.com')) {
-    alert('Le Client ID ne semble pas valide. Il doit se terminer par .apps.googleusercontent.com');
-    return;
-  }
+  if (!id || !id.includes('.apps.googleusercontent.com')) { alert('Le Client ID ne semble pas valide.'); return; }
   localStorage.setItem('muscuGDriveClientId', id);
   closeConfigOverlay();
   initGoogleAuth();
 }
-
 function handleSyncAction() {
-  if (!getSavedClientId()) {
-    showConfigOverlay();
-  } else if (!gdriveReady) {
-    initGoogleAuth();
-  } else {
-    forcePull();
-  }
+  if (!getSavedClientId()) showConfigOverlay();
+  else if (!gdriveReady) initGoogleAuth();
+  else forcePull();
 }
-
 function loadGISScript() {
   return new Promise((resolve, reject) => {
     if (window.google && window.google.accounts) { resolve(); return; }
     const s = document.createElement('script');
     s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = resolve;
-    s.onerror = reject;
+    s.onload = resolve; s.onerror = reject;
     document.head.appendChild(s);
   });
 }
-
 async function initGoogleAuth() {
   const clientId = getSavedClientId();
   if (!clientId) { showConfigOverlay(); return; }
-
   setSyncState('syncing', 'Connexion à Google…');
-
-  // 1. Tente de réutiliser le token sauvegardé s'il est encore valide
   const savedToken = getSavedToken();
   if (savedToken) {
-    accessToken = savedToken;
-    gdriveReady = true;
+    accessToken = savedToken; gdriveReady = true;
     setSyncState('syncing', 'Chargement des données…');
-    await pullFromDrive();
-    return;
+    await pullFromDrive(); return;
   }
-
-  // 2. Sinon, demande un nouveau token (sans popup si déjà autorisé)
   try {
     await loadGISScript();
-
     const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: SCOPES,
+      client_id: clientId, scope: SCOPES,
       callback: async (resp) => {
-        if (resp.error) {
-          clearSavedToken();
-          setSyncState('error', 'Erreur d\'authentification : ' + resp.error);
-          return;
-        }
+        if (resp.error) { clearSavedToken(); setSyncState('error', 'Erreur d\'authentification : ' + resp.error); return; }
         accessToken = resp.access_token;
-        saveToken(resp.access_token, resp.expires_in || 3600); // sauvegarde pour la prochaine fois
+        saveToken(resp.access_token, resp.expires_in || 3600);
         gdriveReady = true;
         setSyncState('syncing', 'Chargement des données…');
         await pullFromDrive();
       },
     });
-
-    tokenClient.requestAccessToken({ prompt: '' }); // prompt vide = pas de popup si déjà autorisé
-  } catch (e) {
-    setSyncState('error', 'Impossible de charger Google. Vérifie ta connexion.');
-    console.error(e);
-  }
+    tokenClient.requestAccessToken({ prompt: '' });
+  } catch (e) { setSyncState('error', 'Impossible de charger Google.'); console.error(e); }
 }
-
 async function getOrCreateFileId() {
   if (driveFileId) return driveFileId;
-
-  const search = await fetch(
-    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name)`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  const search = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name)`, { headers: { Authorization: `Bearer ${accessToken}` } });
   const data = await search.json();
-  if (data.files && data.files.length > 0) {
-    driveFileId = data.files[0].id;
-    return driveFileId;
-  }
-
-  const create = await fetch('https://www.googleapis.com/drive/v3/files', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: DRIVE_FILE_NAME, parents: ['appDataFolder'] }),
-  });
+  if (data.files && data.files.length > 0) { driveFileId = data.files[0].id; return driveFileId; }
+  const create = await fetch('https://www.googleapis.com/drive/v3/files', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: DRIVE_FILE_NAME, parents: ['appDataFolder'] }) });
   const created = await create.json();
-  driveFileId = created.id;
-  return driveFileId;
+  driveFileId = created.id; return driveFileId;
 }
-
 async function pullFromDrive() {
   try {
     const fileId = await getOrCreateFileId();
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    // Token expiré → on efface et on relance l'auth
-    if (res.status === 401) {
-      clearSavedToken();
-      gdriveReady = false;
-      accessToken = null;
-      setSyncState('error', 'Session expirée, reconnexion…');
-      setTimeout(initGoogleAuth, 1000);
-      return;
-    }
-
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (res.status === 401) { clearSavedToken(); gdriveReady = false; accessToken = null; setSyncState('error', 'Session expirée, reconnexion…'); setTimeout(initGoogleAuth, 1000); return; }
     if (res.status === 200) {
       const text = await res.text();
       if (text && text.trim().startsWith('{')) {
         const data = JSON.parse(text);
-        if (Array.isArray(data.sessions)) {
-          sessions = data.sessions;
-          saveToLocalStorage();
-          renderSessionsList();
-          updateDataPreview();
-        }
+        if (Array.isArray(data.sessions)) { sessions = data.sessions; saveToLocalStorage(); renderSessionsList(); updateDataPreview(); }
       }
     }
     setSyncState('connected', 'Synchronisé · ' + nowStr());
     updateSyncButton('Sync maintenant', false);
-  } catch (e) {
-    setSyncState('error', 'Erreur de lecture Drive');
-    console.error(e);
-  }
+  } catch (e) { setSyncState('error', 'Erreur de lecture Drive'); console.error(e); }
 }
-
 async function pushToDrive() {
   if (!gdriveReady || !accessToken) return;
   setSyncState('syncing', 'Synchronisation…');
   try {
     const fileId = await getOrCreateFileId();
     const payload = JSON.stringify({ sessions, updatedAt: new Date().toISOString() });
-    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: payload,
-    });
-
-    // Token expiré → on efface et on relance l'auth
-    if (res.status === 401) {
-      clearSavedToken();
-      gdriveReady = false;
-      accessToken = null;
-      setSyncState('error', 'Session expirée, reconnexion…');
-      setTimeout(initGoogleAuth, 1000);
-      return;
-    }
-
+    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, { method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: payload });
+    if (res.status === 401) { clearSavedToken(); gdriveReady = false; accessToken = null; setSyncState('error', 'Session expirée, reconnexion…'); setTimeout(initGoogleAuth, 1000); return; }
     setSyncState('connected', 'Synchronisé · ' + nowStr());
-  } catch (e) {
-    setSyncState('error', 'Erreur d\'envoi vers Drive');
-    console.error(e);
-  }
+  } catch (e) { setSyncState('error', 'Erreur d\'envoi vers Drive'); console.error(e); }
 }
-
-async function forcePull() {
-  if (!gdriveReady) { initGoogleAuth(); return; }
-  setSyncState('syncing', 'Chargement depuis Drive…');
-  await pullFromDrive();
-}
-async function forcePush() {
-  if (!gdriveReady) { initGoogleAuth(); return; }
-  await pushToDrive();
-}
-
-function setSyncState(state, label) {
-  const dot = document.getElementById('syncDot');
-  const lbl = document.getElementById('syncLabel');
-  dot.className = 'sync-dot ' + state;
-  lbl.textContent = label;
-}
-function updateSyncButton(text, isPrimary) {
-  const btn = document.getElementById('syncActionBtn');
-  btn.textContent = text;
-  btn.className = 'sync-btn' + (isPrimary ? ' primary' : '');
-}
-function nowStr() {
-  return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
+async function forcePull() { if (!gdriveReady) { initGoogleAuth(); return; } setSyncState('syncing', 'Chargement depuis Drive…'); await pullFromDrive(); }
+async function forcePush() { if (!gdriveReady) { initGoogleAuth(); return; } await pushToDrive(); }
+function setSyncState(state, label) { document.getElementById('syncDot').className = 'sync-dot ' + state; document.getElementById('syncLabel').textContent = label; }
+function updateSyncButton(text, isPrimary) { const btn = document.getElementById('syncActionBtn'); btn.textContent = text; btn.className = 'sync-btn' + (isPrimary ? ' primary' : ''); }
+function nowStr() { return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
 
 // ════════════════════════════════════════════════════════
 //  STOCKAGE LOCAL
 // ════════════════════════════════════════════════════════
-function saveToLocalStorage() {
-  localStorage.setItem('muscuSessions', JSON.stringify(sessions));
-}
-function loadFromStorage() {
-  const saved = localStorage.getItem('muscuSessions');
-  if (saved) {
-    try { sessions = JSON.parse(saved); } catch (e) {}
-  }
-}
-
-function saveToStorage() {
-  saveToLocalStorage();
-  if (gdriveReady) pushToDrive();
-}
+function saveToLocalStorage() { localStorage.setItem('muscuSessions', JSON.stringify(sessions)); }
+function loadFromStorage() { const saved = localStorage.getItem('muscuSessions'); if (saved) { try { sessions = JSON.parse(saved); } catch (e) {} } }
+function saveToStorage() { saveToLocalStorage(); if (gdriveReady) pushToDrive(); }
 
 // ════════════════════════════════════════════════════════
 //  LOGIQUE APP
@@ -767,49 +646,28 @@ function init() {
   loadFromStorage();
   renderExerciseLists();
   updateDataPreview();
-  restoreDraft(); // ← Restaure la séance en cours si elle existait
-
-  if (getSavedClientId()) {
-    setSyncState('syncing', 'Connexion automatique…');
-    updateSyncButton('Connexion…', false);
-    setTimeout(initGoogleAuth, 500);
-  } else {
-    setSyncState('', 'Google Drive non configuré');
-    updateSyncButton('Configurer', true);
-  }
+  restoreDraft();
+  if (getSavedClientId()) { setSyncState('syncing', 'Connexion automatique…'); updateSyncButton('Connexion…', false); setTimeout(initGoogleAuth, 500); }
+  else { setSyncState('', 'Google Drive non configuré'); updateSyncButton('Configurer', true); }
 }
 
 function updateCalc() {
-  let totalReps = 0;
-  let totalWeight = 0;
-  let totalSeries = 0;
-  let nbExos = 0;
-  let hasData = false;
-
+  let totalReps = 0, totalWeight = 0, totalSeries = 0, nbExos = 0, hasData = false;
   for (let i = 0; i < 6; i++) {
     let exoHasData = false;
     for (let k = 0; k < 2; k++) {
-      const poidsEl = document.getElementById(`poids${i}k${k}`);
+      const poidsEl = document.getElementById('poids' + i + 'k' + k);
       if (!poidsEl) continue;
       const poids = parseFloat(poidsEl.value) || 0;
-      let ligneHasReps = false;
       for (let j = 0; j < 4; j++) {
-        const repEl = document.getElementById(`reps${i}k${k}s${j}`);
+        const repEl = document.getElementById('reps' + i + 'k' + k + 's' + j);
         if (!repEl) continue;
         const reps = parseInt(repEl.value);
-        if (!isNaN(reps) && reps > 0) {
-          totalReps += reps;
-          totalWeight += poids * reps;
-          totalSeries++;
-          ligneHasReps = true;
-          exoHasData = true;
-          hasData = true;
-        }
+        if (!isNaN(reps) && reps > 0) { totalReps += reps; totalWeight += poids * reps; totalSeries++; exoHasData = true; hasData = true; }
       }
     }
     if (exoHasData) nbExos++;
   }
-
   const exosEl = document.getElementById('calcNbExos');
   const seriesEl = document.getElementById('calcTotalSeries');
   const repsEl = document.getElementById('calcTotalReps');
@@ -820,18 +678,16 @@ function updateCalc() {
   if (weightEl) weightEl.textContent = hasData ? totalWeight.toLocaleString('fr-FR') + ' kg' : '—';
 }
 
-
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
-  document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.querySelector('button[onclick="switchTab(\'' + tab + '\')"]').classList.add('active');
   if (tab === 'sessions') renderSessionsList();
   if (tab === 'export') updateDataPreview();
   if (tab === 'calc') updateCalc();
 }
 
-// Le paramètre `restoring` évite de re-sauvegarder le draft pendant la restauration
 function updateExerciseList(restoring) {
   const type = document.getElementById('sessionType').value;
   if (!type) { document.getElementById('exercisesContainer').innerHTML = ''; clearDraft(); return; }
@@ -841,37 +697,46 @@ function updateExerciseList(restoring) {
   let html = '';
   for (let i = 0; i < 6; i++) {
     html += `
-      <div class="exercise-block">
-        <div class="exercise-title">Exercice ${i + 1}</div>
-        <div class="form-group" style="margin-bottom: 8px;">
-          <label>Exercice</label>
-          <select id="exo${i}" oninput="saveDraftForm()">
-            <option value="">-- Vide --</option>
-            ${exercises.map(e => `<option value="${e}">${e}</option>`).join('')}
-          </select>
+      <div class="exercise-block collapsed" id="exoBlock${i}">
+        <div class="exercise-header" onclick="toggleExercise(${i})">
+          <div class="exercise-header-left">
+            <span class="exercise-num">Exo ${i + 1}</span>
+            <span class="exercise-name-preview empty" id="exoPreview${i}">Vide</span>
+            <span class="exercise-data-dot" id="exoDot${i}"></span>
+          </div>
+          <span class="exercise-chevron">▼</span>
         </div>
-        <div class="form-group" style="margin-bottom: 8px;">
-          <label>Variation</label>
-          <select id="var${i}" oninput="saveDraftForm()">
-            <option value="">-- Aucune --</option>
-            ${variations.map(v => `<option value="${v}">${v}</option>`).join('')}
-          </select>
-        </div>
-        <div style="margin-bottom:4px;">
-          <label style="margin-bottom:6px;">Séries</label>
-          ${[0,1].map(k => `
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;background:rgba(220,50,50,0.08);border-radius:6px;padding:6px 8px;">
-              <input type="number" id="poids${i}k${k}" placeholder="kg" min="0" step="0.5"
-                style="width:0;flex:1.2;min-width:0;padding:8px 4px;font-size:16px;text-align:center;border:1px solid rgba(200,50,50,0.4);border-radius:6px;"
-                oninput="saveDraftForm()">
-              <span style="font-size:11px;color:#888;white-space:nowrap;flex-shrink:0;">×</span>
-              ${[0,1,2,3].map(j => `
-                <input type="number" id="reps${i}k${k}s${j}" placeholder="—" min="0"
-                  style="width:0;flex:1;min-width:0;padding:8px 2px;font-size:16px;text-align:center;border-radius:6px;"
+        <div class="exercise-body">
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label>Exercice</label>
+            <select id="exo${i}" oninput="saveDraftForm()">
+              <option value="">-- Vide --</option>
+              ${exercises.map(e => `<option value="${e}">${e}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label>Variation</label>
+            <select id="var${i}" oninput="saveDraftForm()">
+              <option value="">-- Aucune --</option>
+              ${variations.map(v => `<option value="${v}">${v}</option>`).join('')}
+            </select>
+          </div>
+          <div style="margin-bottom:4px;">
+            <label style="margin-bottom:6px;">Séries</label>
+            ${[0,1].map(k => `
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;background:rgba(220,50,50,0.08);border-radius:6px;padding:6px 8px;">
+                <input type="number" id="poids${i}k${k}" placeholder="kg" min="0" step="0.5"
+                  style="width:0;flex:1.2;min-width:0;padding:8px 4px;font-size:16px;text-align:center;border:1px solid rgba(200,50,50,0.4);border-radius:6px;"
                   oninput="saveDraftForm()">
-              `).join('')}
-            </div>
-          `).join('')}
+                <span style="font-size:11px;color:#888;white-space:nowrap;flex-shrink:0;">×</span>
+                ${[0,1,2,3].map(j => `
+                  <input type="number" id="reps${i}k${k}s${j}" placeholder="—" min="0"
+                    style="width:0;flex:1;min-width:0;padding:8px 2px;font-size:16px;text-align:center;border-radius:6px;"
+                    oninput="saveDraftForm()">
+                `).join('')}
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>`;
   }
@@ -885,15 +750,15 @@ function saveSession(clearAfter) {
   if (!type || !date) { alert('Veuillez sélectionner une date et un type de séance'); return; }
   const session = { id: Date.now(), type, date, exercises: [] };
   for (let i = 0; i < 6; i++) {
-    const exo = document.getElementById(`exo${i}`).value;
+    const exo = document.getElementById('exo' + i).value;
     if (!exo) continue;
-    const variation = document.getElementById(`var${i}`).value || '';
+    const variation = document.getElementById('var' + i).value || '';
     const lignes = [];
     for (let k = 0; k < 2; k++) {
-      const poids = parseFloat(document.getElementById(`poids${i}k${k}`).value) || null;
+      const poids = parseFloat(document.getElementById('poids' + i + 'k' + k).value) || null;
       const reps = [];
       for (let j = 0; j < 4; j++) {
-        const r = parseInt(document.getElementById(`reps${i}k${k}s${j}`).value);
+        const r = parseInt(document.getElementById('reps' + i + 'k' + k + 's' + j).value);
         if (!isNaN(r) && r > 0) reps.push(r);
       }
       if (poids !== null || reps.length > 0) lignes.push({ poids, reps });
@@ -903,7 +768,7 @@ function saveSession(clearAfter) {
   if (session.exercises.length === 0) { alert('Veuillez ajouter au moins un exercice avec des données'); return; }
   sessions.push(session);
   saveToStorage();
-  clearDraft(); // ← Efface le brouillon après sauvegarde réussie
+  clearDraft();
   alert('✓ Séance sauvegardée !');
   if (clearAfter) clearForm();
 }
@@ -912,7 +777,7 @@ function clearForm() {
   document.getElementById('sessionType').value = '';
   updateExerciseList();
   document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
-  clearDraft(); // ← Efface le brouillon après effacement manuel
+  clearDraft();
 }
 
 function renderSessionsList() {
@@ -928,9 +793,7 @@ function renderSessionsList() {
         <label for="chk-${s.id}" style="cursor:pointer;flex:1;">${s.type} - ${s.date}</label>
       </div>
       <div class="session-info">${s.exercises.length} exercice(s)</div>
-      <div class="session-exos">
-        ${s.exercises.map(e => `${e.exo}${e.variation ? ' (' + e.variation + ')' : ''} - ${(e.lignes ? e.lignes.reduce((a,l)=>a+(l.reps||[]).length,0) : (e.reps||[]).length)} séries`).join('<br>')}
-      </div>
+      <div class="session-exos">${s.exercises.map(e => `${e.exo}${e.variation ? ' (' + e.variation + ')' : ''} - ${(e.lignes ? e.lignes.reduce((a,l)=>a+(l.reps||[]).length,0) : (e.reps||[]).length)} séries`).join('<br>')}</div>
       <button class="btn-danger" style="margin-top: 8px; width: 100%; font-weight: 500;" onclick="deleteSession(${s.id})">Supprimer</button>
     </div>
   `).join('');
@@ -947,17 +810,10 @@ function deleteSession(id) {
 let selectedSessionId = null;
 
 function onSessionCheckChange(id, checkbox) {
-  // Uncheck all others
-  document.querySelectorAll('.session-checkbox').forEach(chk => {
-    if (chk.id !== checkbox.id) chk.checked = false;
-  });
+  document.querySelectorAll('.session-checkbox').forEach(chk => { if (chk.id !== checkbox.id) chk.checked = false; });
   document.querySelectorAll('.session-card').forEach(card => card.classList.remove('selected'));
-  if (checkbox.checked) {
-    selectedSessionId = id;
-    document.getElementById('card-' + id).classList.add('selected');
-  } else {
-    selectedSessionId = null;
-  }
+  if (checkbox.checked) { selectedSessionId = id; document.getElementById('card-' + id).classList.add('selected'); }
+  else selectedSessionId = null;
 }
 
 function buildCalcTSV(sessionsToExport) {
@@ -993,16 +849,8 @@ function updateDataPreview() {
 }
 
 function copyToClipboard() {
-  let sessionsToExport;
-  if (selectedSessionId !== null) {
-    sessionsToExport = sessions.filter(s => s.id === selectedSessionId);
-  } else {
-    sessionsToExport = sessions;
-  }
-  if (sessionsToExport.length === 0) {
-    alert('Aucune séance à copier.');
-    return;
-  }
+  let sessionsToExport = selectedSessionId !== null ? sessions.filter(s => s.id === selectedSessionId) : sessions;
+  if (sessionsToExport.length === 0) { alert('Aucune séance à copier.'); return; }
   const text = buildCalcTSV(sessionsToExport);
   navigator.clipboard.writeText(text).then(() => {
     const msg = document.getElementById('successMsg');
@@ -1010,29 +858,13 @@ function copyToClipboard() {
     setTimeout(() => msg.classList.remove('show'), 2000);
   }).catch(() => {
     const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
   });
-}
-
-function exportToExcel() {
-  const tsv = buildCalcTSV(sessions);
-  const blob = new Blob(['\uFEFF' + tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  const parts = new Date().toISOString().split('T')[0].split('-');
-  link.setAttribute('download', `muscu_${parts[2]}-${parts[1]}-${parts[0].substring(2)}.tsv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }
 
 function renderExerciseLists() {
   Object.entries(EXERCISE_LISTS).forEach(([key, exos]) => {
-    document.getElementById(`exerciseList-${key}`).innerHTML = exos.map(e => `
+    document.getElementById('exerciseList-' + key).innerHTML = exos.map(e => `
       <div class="exercise-list-item">
         <span>${e}</span>
         <button class="btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteExercise('${key}', '${e}')">−</button>
@@ -1042,7 +874,7 @@ function renderExerciseLists() {
 }
 
 function addExercise(group) {
-  const input = document.getElementById(`newExercise${group}`);
+  const input = document.getElementById('newExercise' + group);
   const name = input.value.trim();
   if (!name) return;
   if (EXERCISE_LISTS[group].includes(name)) { alert('Cet exercice existe déjà'); return; }
@@ -1070,125 +902,46 @@ function resetAllData() {
 }
 
 // ===== CHRONOMÈTRE =====
-const CHRONO_MAX = 3600; // 1h en secondes
-
+const CHRONO_MAX = 3600;
 let chronoInterval = null;
-
-function chronoGetState() {
-  const running = localStorage.getItem('chronoRunning') === '1';
-  const startTs = parseInt(localStorage.getItem('chronoStartTs') || '0');
-  const base = parseInt(localStorage.getItem('chronoBase') || '0');
-  return { running, startTs, base };
-}
-
-function chronoSaveState(running, startTs, base) {
-  localStorage.setItem('chronoRunning', running ? '1' : '0');
-  localStorage.setItem('chronoStartTs', startTs.toString());
-  localStorage.setItem('chronoBase', base.toString());
-}
-
-function chronoGetElapsed() {
-  const { running, startTs, base } = chronoGetState();
-  if (!running) return base;
-  return base + Math.floor((Date.now() - startTs) / 1000);
-}
-
-function chronoFormatTime(secs) {
-  const m = String(Math.floor(secs / 60)).padStart(2, '0');
-  const s = String(secs % 60).padStart(2, '0');
-  return m + ':' + s;
-}
-
+function chronoGetState() { return { running: localStorage.getItem('chronoRunning') === '1', startTs: parseInt(localStorage.getItem('chronoStartTs') || '0'), base: parseInt(localStorage.getItem('chronoBase') || '0') }; }
+function chronoSaveState(running, startTs, base) { localStorage.setItem('chronoRunning', running ? '1' : '0'); localStorage.setItem('chronoStartTs', startTs.toString()); localStorage.setItem('chronoBase', base.toString()); }
+function chronoGetElapsed() { const { running, startTs, base } = chronoGetState(); if (!running) return base; return base + Math.floor((Date.now() - startTs) / 1000); }
+function chronoFormatTime(secs) { return String(Math.floor(secs / 60)).padStart(2, '0') + ':' + String(secs % 60).padStart(2, '0'); }
 function chronoUpdateDisplay() {
   let elapsed = chronoGetElapsed();
   const maxMsg = document.getElementById('chronoMax');
-
-  if (elapsed >= CHRONO_MAX) {
-    chronoReset();
-    if (maxMsg) { maxMsg.style.display = 'block'; setTimeout(() => { maxMsg.style.display = 'none'; }, 4000); }
-    return;
-  }
-
+  if (elapsed >= CHRONO_MAX) { chronoReset(); if (maxMsg) { maxMsg.style.display = 'block'; setTimeout(() => { maxMsg.style.display = 'none'; }, 4000); } return; }
   const display = document.getElementById('chronoDisplay');
   if (display) display.textContent = chronoFormatTime(elapsed);
 }
-
-function chronoStartInterval() {
-  if (chronoInterval) return;
-  chronoInterval = setInterval(chronoUpdateDisplay, 500);
-}
-
-function chronoStopInterval() {
-  if (chronoInterval) { clearInterval(chronoInterval); chronoInterval = null; }
-}
-
-function chronoUpdateBtn() {
-  const { running } = chronoGetState();
-  const btn = document.getElementById('chronoStartStop');
-  if (btn) btn.textContent = running ? '⏸ Pause' : '▶ Démarrer';
-}
-
+function chronoStartInterval() { if (chronoInterval) return; chronoInterval = setInterval(chronoUpdateDisplay, 500); }
+function chronoStopInterval() { if (chronoInterval) { clearInterval(chronoInterval); chronoInterval = null; } }
+function chronoUpdateBtn() { const { running } = chronoGetState(); const btn = document.getElementById('chronoStartStop'); if (btn) btn.textContent = running ? '⏸ Pause' : '▶ Démarrer'; }
 function chronoToggle() {
   const { running, startTs, base } = chronoGetState();
-  if (running) {
-    const elapsed = base + Math.floor((Date.now() - startTs) / 1000);
-    chronoSaveState(false, 0, elapsed);
-    chronoStopInterval();
-  } else {
-    chronoSaveState(true, Date.now(), base);
-    chronoStartInterval();
-  }
-  chronoUpdateBtn();
-  chronoUpdateDisplay();
+  if (running) { chronoSaveState(false, 0, base + Math.floor((Date.now() - startTs) / 1000)); chronoStopInterval(); }
+  else { chronoSaveState(true, Date.now(), base); chronoStartInterval(); }
+  chronoUpdateBtn(); chronoUpdateDisplay();
 }
-
-function chronoReset() {
-  chronoSaveState(false, 0, 0);
-  chronoStopInterval();
-  chronoUpdateBtn();
-  const display = document.getElementById('chronoDisplay');
-  if (display) display.textContent = '00:00';
-}
-
-function chronoRestart() {
-  chronoSaveState(true, Date.now(), 0);
-  chronoStopInterval();
-  chronoStartInterval();
-  chronoUpdateBtn();
-  chronoUpdateDisplay();
-}
-
-// Gestion arrière-plan : Page Visibility API
+function chronoReset() { chronoSaveState(false, 0, 0); chronoStopInterval(); chronoUpdateBtn(); const d = document.getElementById('chronoDisplay'); if (d) d.textContent = '00:00'; }
+function chronoRestart() { chronoSaveState(true, Date.now(), 0); chronoStopInterval(); chronoStartInterval(); chronoUpdateBtn(); chronoUpdateDisplay(); }
 document.addEventListener('visibilitychange', function() {
   const { running } = chronoGetState();
-  if (!document.hidden && running) {
-    chronoUpdateDisplay();
-    chronoStartInterval();
-  } else if (document.hidden) {
-    chronoStopInterval();
-  }
+  if (!document.hidden && running) { chronoUpdateDisplay(); chronoStartInterval(); }
+  else if (document.hidden) chronoStopInterval();
 });
-
-// Init chrono au chargement
 window.addEventListener('DOMContentLoaded', function() {
   const { running } = chronoGetState();
-  chronoUpdateDisplay();
-  chronoUpdateBtn();
+  chronoUpdateDisplay(); chronoUpdateBtn();
   if (running) chronoStartInterval();
 });
-// ===== FIN CHRONOMÈTRE =====
 
 // ===== SPLASH SCREEN =====
 window.addEventListener('DOMContentLoaded', function() {
   const splash = document.getElementById('splash');
-  setTimeout(function() {
-    splash.classList.add('fade-out');
-    setTimeout(function() {
-      splash.style.display = 'none';
-    }, 400); // durée du fondu (0.4s)
-  }, 2000); // 2 secondes d'affichage
+  setTimeout(function() { splash.classList.add('fade-out'); setTimeout(function() { splash.style.display = 'none'; }, 400); }, 2000);
 });
-// ===== FIN SPLASH SCREEN =====
 
 window.addEventListener('DOMContentLoaded', init);
 </script>
