@@ -175,6 +175,122 @@
     .section-heading { font-weight: 600; font-size: 13px; margin: 1.5rem 0 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .no-data { text-align: center; color: #888; padding: 2rem 1rem; font-size: 13px; }
 
+    /* ===== OBJECTIFS ===== */
+    .objectif-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 0;
+      border-bottom: 0.5px solid rgba(0,0,0,0.07);
+    }
+    .objectif-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .objectif-row:first-child { padding-top: 0; }
+
+    .objectif-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .objectif-label {
+      font-size: 14px;
+      font-weight: 500;
+      flex: 1;
+    }
+    .objectif-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .objectif-input {
+      width: 72px !important;
+      padding: 6px 8px !important;
+      font-size: 15px !important;
+      text-align: center;
+      border-radius: 6px !important;
+      border: 0.5px solid rgba(0,0,0,0.2) !important;
+    }
+    @media (prefers-color-scheme: dark) {
+      .objectif-input { border-color: rgba(255,255,255,0.2) !important; }
+    }
+    .objectif-unit {
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    /* Gauge */
+    .objectif-gauge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .objectif-gauge-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(0,0,0,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    @media (prefers-color-scheme: dark) {
+      .objectif-gauge-track { background: rgba(255,255,255,0.1); }
+    }
+    .objectif-gauge-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: #4caf50;
+      transition: width 0.3s ease, background 0.3s ease;
+      width: 0%;
+    }
+    .objectif-gauge-fill        { background: #d32f2f; }
+    .objectif-gauge-fill.warn  { background: #ff9800; }
+    .objectif-gauge-fill.done  { background: #4caf50; }
+    .objectif-gauge-fill.over  { background: #1565c0; }
+
+    .objectif-pct {
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 36px;
+      text-align: right;
+      color: #888;
+    }
+    .objectif-pct.active { color: #1a1a1a; }
+    @media (prefers-color-scheme: dark) { .objectif-pct.active { color: #f5f5f5; } }
+    /* ===== CONFETTIS ===== */
+    #confettiOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      pointer-events: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #confettiOverlay.show { display: flex; }
+    #confettiEmoji {
+      font-size: 96px;
+      animation: emojiPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.2));
+    }
+    @keyframes emojiPop {
+      0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0deg);   opacity: 1; }
+    }
+    .confetti-piece {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 8999;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-20px) rotate(0deg);    opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg);  opacity: 0; }
+    }
     /* ===== SPLASH SCREEN ===== */
     #splash { position: fixed; inset: 0; background: #00275E; display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 1; transition: opacity 0.4s ease; }
     #splash.fade-out { opacity: 0; pointer-events: none; }
@@ -182,6 +298,11 @@
   </style>
 </head>
 <body>
+
+<!-- CONFETTIS -->
+<div id="confettiOverlay">
+  <span id="confettiEmoji">💪</span>
+</div>
 
 <div id="splash">
   <img src="Logo 512 512 shaka V3.png" alt="Muscu Tracker">
@@ -288,6 +409,77 @@
         <button onclick="chronoRestart()" style="flex: 1; padding: 12px; font-weight: 500; font-size: 14px; color: #1565c0; border-color: rgba(21,101,192,0.3);">↺ Relancer</button>
       </div>
     </div>
+    <!-- OBJECTIFS -->
+    <div class="settings-section" style="margin-top: 1rem; margin-bottom: 1rem;">
+      <div class="settings-title">🎯 Objectifs de séance</div>
+
+      <!-- Nb exos -->
+      <div class="objectif-row">
+        <div class="objectif-top">
+          <span class="objectif-label">Nombre d'exos</span>
+          <div class="objectif-input-wrap">
+            <input type="number" class="objectif-input" id="objExos" min="0" placeholder="—" oninput="saveObjectifs(); updateCalc()">
+          </div>
+        </div>
+        <div class="objectif-gauge-wrap" id="gaugeWrapExos" style="display:none;">
+          <div class="objectif-gauge-track">
+            <div class="objectif-gauge-fill" id="gaugeFillExos"></div>
+          </div>
+          <span class="objectif-pct" id="gaugePctExos">0%</span>
+        </div>
+      </div>
+
+      <!-- Total séries -->
+      <div class="objectif-row">
+        <div class="objectif-top">
+          <span class="objectif-label">Total de séries</span>
+          <div class="objectif-input-wrap">
+            <input type="number" class="objectif-input" id="objSeries" min="0" placeholder="—" oninput="saveObjectifs(); updateCalc()">
+          </div>
+        </div>
+        <div class="objectif-gauge-wrap" id="gaugeWrapSeries" style="display:none;">
+          <div class="objectif-gauge-track">
+            <div class="objectif-gauge-fill" id="gaugeFillSeries"></div>
+          </div>
+          <span class="objectif-pct" id="gaugePctSeries">0%</span>
+        </div>
+      </div>
+
+      <!-- Total reps -->
+      <div class="objectif-row">
+        <div class="objectif-top">
+          <span class="objectif-label">Total de reps</span>
+          <div class="objectif-input-wrap">
+            <input type="number" class="objectif-input" id="objReps" min="0" placeholder="—" oninput="saveObjectifs(); updateCalc()">
+          </div>
+        </div>
+        <div class="objectif-gauge-wrap" id="gaugeWrapReps" style="display:none;">
+          <div class="objectif-gauge-track">
+            <div class="objectif-gauge-fill" id="gaugeFillReps"></div>
+          </div>
+          <span class="objectif-pct" id="gaugePctReps">0%</span>
+        </div>
+      </div>
+
+      <!-- Total poids -->
+      <div class="objectif-row">
+        <div class="objectif-top">
+          <span class="objectif-label">Total poids soulevé</span>
+          <div class="objectif-input-wrap">
+            <input type="number" class="objectif-input" id="objPoids" min="0" placeholder="—" oninput="saveObjectifs(); updateCalc()">
+            <span class="objectif-unit">kg</span>
+          </div>
+        </div>
+        <div class="objectif-gauge-wrap" id="gaugeWrapPoids" style="display:none;">
+          <div class="objectif-gauge-track">
+            <div class="objectif-gauge-fill" id="gaugeFillPoids"></div>
+          </div>
+          <span class="objectif-pct" id="gaugePctPoids">0%</span>
+        </div>
+      </div>
+
+    </div>
+
     <p style="font-size: 12px; color: #888; text-align: center; line-height: 1.6;">
       Les valeurs se mettent à jour automatiquement<br>selon ce que tu saisis dans l'onglet Saisie.
     </p>
@@ -379,16 +571,16 @@
 //  DONNÉES DE L'APP
 // ════════════════════════════════════════════════════════
 const EXERCISE_LISTS = {
-  P: ['EC', 'EC pecs machine', 'EC pecs machine double', 'EC poulie haute', 'EC poulie basse', 'EC el bas', 'EC el haut', 'DC', 'DCH', 'DCHD', 'DCHI', 'DD', 'DI', 'Press pecs cv bi', 'Press pecs cv uni', 'Pull over', 'Tirage bas', 'Tractions', 'Relevé lombaire', 'Gainage'],
-  F: ['HT poulie', 'Fentes', 'Fentes marchées', 'Fentes SDT', 'SDT', 'Mollets debout', 'Mollets assis', 'Leg curl', 'Relevé lombaire', 'Relevé lombaire', 'Gainage'],
-  D: ['Tractions', 'Tirage conv', 'Tirage conv uni', 'Tirage haltère uni', 'Tirage machine double', 'Rowing', 'Tirage bas', 'Tirage bas uni', 'Tirage haut', 'Tirage haut uni', 'DMM', 'DM', 'EL Pl basse', 'ELH', 'EL elast', 'EPH', 'EP elast', 'Shrug', 'Ecarté machine double', 'Rowing menton', 'Relevé lombaire', 'Gainage'],
-  Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Leg curl', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis', 'Relevé lombaire', 'Gainage'],
+  P: ['EC', 'EC pecs machine', 'EC pecs machine double', 'EC poulie haute', 'EC poulie basse', 'EC el bas', 'EC el haut', 'DC', 'DCH', 'DCHD', 'DCHI', 'DD', 'DI', 'Press pecs cv bi', 'Press pecs cv uni', 'Pull over', 'Tirage bas', 'Tractions', 'Relevé lombaire', 'Gainage', 'Crunch'],
+  F: ['HT poulie', 'Fentes', 'Fentes marchées', 'Fentes SDT', 'SDT', 'Mollets debout', 'Mollets assis', 'Leg curl', 'Relevé lombaire', 'Relevé lombaire', 'Gainage', 'Crunch'],
+  D: ['Tractions', 'Tirage conv', 'Tirage conv uni', 'Tirage haltère uni', 'Tirage machine double', 'Rowing', 'Tirage bas', 'Tirage bas uni', 'Tirage haut', 'Tirage haut uni', 'DMM', 'DM', 'EL Pl basse', 'ELH', 'EL elast', 'EPH', 'EP elast', 'Shrug', 'Ecarté machine double', 'Rowing menton', 'Relevé lombaire', 'Gainage', 'Crunch'],
+  Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Leg curl', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis', 'Relevé lombaire', 'Gainage', 'Crunch'],
 };
 const VARIATIONS = {
-  P: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
-  F: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
-  D: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
-  Q: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+  P: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
+  F: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
+  D: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
+  Q: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
 };
 let sessions = [];
 
@@ -647,6 +839,8 @@ function init() {
   renderExerciseLists();
   updateDataPreview();
   restoreDraft();
+  restoreObjectifs();
+  updateCalc();
   if (getSavedClientId()) { setSyncState('syncing', 'Connexion automatique…'); updateSyncButton('Connexion…', false); setTimeout(initGoogleAuth, 500); }
   else { setSyncState('', 'Google Drive non configuré'); updateSyncButton('Configurer', true); }
 }
@@ -676,6 +870,62 @@ function updateCalc() {
   if (seriesEl) seriesEl.textContent = hasData ? totalSeries : '—';
   if (repsEl) repsEl.textContent = hasData ? totalReps.toLocaleString('fr-FR') : '—';
   if (weightEl) weightEl.textContent = hasData ? totalWeight.toLocaleString('fr-FR') + ' kg' : '—';
+
+  // Mise à jour des jauges d'objectifs
+  updateGauge('Exos',   nbExos,      parseInt(document.getElementById('objExos')?.value)  || 0);
+  updateGauge('Series', totalSeries, parseInt(document.getElementById('objSeries')?.value) || 0);
+  updateGauge('Reps',   totalReps,   parseInt(document.getElementById('objReps')?.value)   || 0);
+  updateGauge('Poids',  totalWeight, parseInt(document.getElementById('objPoids')?.value)  || 0);
+}
+
+function updateGauge(key, current, target) {
+  const wrap = document.getElementById('gaugeWrap' + key);
+  const fill = document.getElementById('gaugeFill' + key);
+  const pct  = document.getElementById('gaugePct'  + key);
+  if (!wrap || !fill || !pct) return;
+
+  if (!target || target <= 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'flex';
+  const ratio = Math.min(current / target, 1);           // cap à 100% visuellement
+  const pctVal = Math.round(ratio * 100);                 // arrondi à 1%
+  const displayPct = Math.round((current / target) * 100); // peut dépasser 100%
+
+  fill.style.width = (ratio * 100) + '%';
+  pct.textContent  = displayPct + '%';
+  pct.classList.toggle('active', current > 0);
+
+  // Couleur de la jauge
+  fill.className = 'objectif-gauge-fill';
+  if (current >= target)         fill.classList.add('over');
+  else if (ratio >= 0.75)        fill.classList.add('done');
+  else if (ratio >= 0.40)        fill.classList.add('warn');
+  // sinon vert par défaut (classe de base)
+}
+
+// Persistance des objectifs dans localStorage (ils survivent au rechargement)
+function saveObjectifs() {
+  const obj = {
+    exos:   document.getElementById('objExos')?.value   || '',
+    series: document.getElementById('objSeries')?.value || '',
+    reps:   document.getElementById('objReps')?.value   || '',
+    poids:  document.getElementById('objPoids')?.value  || '',
+  };
+  localStorage.setItem('muscuObjectifs', JSON.stringify(obj));
+}
+
+function restoreObjectifs() {
+  const raw = localStorage.getItem('muscuObjectifs');
+  if (!raw) return;
+  let obj;
+  try { obj = JSON.parse(raw); } catch(e) { return; }
+  if (obj.exos   !== undefined) { const el = document.getElementById('objExos');   if (el) el.value = obj.exos;   }
+  if (obj.series !== undefined) { const el = document.getElementById('objSeries'); if (el) el.value = obj.series; }
+  if (obj.reps   !== undefined) { const el = document.getElementById('objReps');   if (el) el.value = obj.reps;   }
+  if (obj.poids  !== undefined) { const el = document.getElementById('objPoids');  if (el) el.value = obj.poids;  }
 }
 
 function switchTab(tab) {
@@ -769,8 +1019,8 @@ function saveSession(clearAfter) {
   sessions.push(session);
   saveToStorage();
   clearDraft();
-  alert('✓ Séance sauvegardée !');
-  if (clearAfter) clearForm();
+  launchConfetti();
+  if (clearAfter) setTimeout(clearForm, 2200);
 }
 
 function clearForm() {
@@ -901,6 +1151,48 @@ function resetAllData() {
   location.reload();
 }
 
+// ===== CONFETTIS =====
+function launchConfetti() {
+  const overlay = document.getElementById('confettiOverlay');
+  const emoji   = document.getElementById('confettiEmoji');
+  if (!overlay) return;
+
+  // Reset et affichage de l'emoji
+  overlay.classList.add('show');
+  emoji.style.animation = 'none';
+  void emoji.offsetWidth; // reflow pour relancer l'animation
+  emoji.style.animation = '';
+
+  // Génère les confettis
+  const colors = ['#f44336','#e91e63','#9c27b0','#3f51b5','#2196f3','#00bcd4','#4caf50','#ffeb3b','#ff9800'];
+  const pieces = 80;
+  const container = document.body;
+  const created = [];
+
+  for (let i = 0; i < pieces; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const size = 7 + Math.random() * 8;
+    el.style.width  = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left   = (Math.random() * 100) + 'vw';
+    el.style.top    = '-20px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.borderRadius = Math.random() > 0.4 ? '50%' : '2px';
+    const dur  = 1.4 + Math.random() * 1.2;
+    const del  = Math.random() * 0.6;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay   = del + 's';
+    container.appendChild(el);
+    created.push(el);
+  }
+
+  // Masque l'overlay et nettoie les confettis après 2.2s
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    created.forEach(el => el.remove());
+  }, 2200);
+}
 // ===== CHRONOMÈTRE =====
 const CHRONO_MAX = 3600;
 let chronoInterval = null;
