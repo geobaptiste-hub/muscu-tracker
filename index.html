@@ -1262,18 +1262,28 @@ document.addEventListener('visibilitychange', function() {
   else if (document.hidden) chronoStopInterval();
 });
 window.addEventListener('DOMContentLoaded', function() {
-  const { running } = chronoGetState();
-  chronoUpdateDisplay(); chronoUpdateBtn();
-  if (running) chronoStartInterval();
-});
-
-// ===== SPLASH SCREEN =====
-window.addEventListener('DOMContentLoaded', function() {
+  // 1. Splash en tout premier — indépendant du reste
   const splash = document.getElementById('splash');
-  setTimeout(function() { splash.classList.add('fade-out'); setTimeout(function() { splash.style.display = 'none'; }, 400); }, 2000);
-});
+  function dismissSplash() {
+    if (!splash) return;
+    splash.classList.add('fade-out');
+    setTimeout(function() { splash.style.display = 'none'; }, 400);
+  }
+  if (splash) {
+    splash.addEventListener('click', dismissSplash);
+    setTimeout(dismissSplash, 2000);
+  }
 
-window.addEventListener('DOMContentLoaded', init);
+  // 2. Chrono
+  try {
+    const { running } = chronoGetState();
+    chronoUpdateDisplay(); chronoUpdateBtn();
+    if (running) chronoStartInterval();
+  } catch(e) { console.error('chrono init error', e); }
+
+  // 3. App
+  try { init(); } catch(e) { console.error('init error', e); }
+});
 </script>
 </body>
 </html>
