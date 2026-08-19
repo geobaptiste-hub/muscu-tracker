@@ -382,6 +382,10 @@
   <div id="sessions" class="tab-content">
     <div class="sessions-list" id="sessionsList"></div>
     <div id="noSessions" class="no-data">Aucune séance enregistrée</div>
+    <div id="sessionsActions" style="display:none; gap:8px; margin-top:1rem;">
+      <button style="flex:1; font-weight:600;" onclick="selectAllSessions()">☑ Tout sélectionner</button>
+      <button class="btn-danger" style="flex:1; font-weight:600;" onclick="deleteSelectedSessions()">🗑 Effacer la sélection</button>
+    </div>
   </div>
 
   <!-- TAB: EXPORT -->
@@ -949,8 +953,15 @@ function clearForm() {
 function renderSessionsList() {
   const list = document.getElementById('sessionsList');
   const noSessions = document.getElementById('noSessions');
-  if (sessions.length === 0) { list.innerHTML = ''; noSessions.style.display = 'block'; return; }
+  const actions = document.getElementById('sessionsActions');
+  if (sessions.length === 0) {
+    list.innerHTML = '';
+    noSessions.style.display = 'block';
+    if (actions) actions.style.display = 'none';
+    return;
+  }
   noSessions.style.display = 'none';
+  if (actions) actions.style.display = 'flex';
   const sorted = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
   list.innerHTML = sorted.map(s => `
     <div class="session-card" id="card-${s.id}">
@@ -965,6 +976,25 @@ function renderSessionsList() {
   `).join('');
 }
 
+function selectAllSessions() {
+  const checkboxes = document.querySelectorAll('.session-checkbox');
+  const allChecked = [...checkboxes].every(c => c.checked);
+  checkboxes.forEach(chk => { chk.checked = !allChecked; });
+  document.querySelectorAll('.session-card').forEach(card => card.classList.toggle('selected', !allChecked));
+  selectedSessionId = null;
+}
+
+function deleteSelectedSessions() {
+  const checked = [...document.querySelectorAll('.session-checkbox')].filter(c => c.checked);
+  if (checked.length === 0) { alert('Aucune séance sélectionnée.'); return; }
+  if (!confirm(`Supprimer ${checked.length} séance(s) ?`)) return;
+  const ids = new Set(checked.map(c => parseInt(c.id.replace('chk-', ''))));
+  sessions = sessions.filter(s => !ids.has(s.id));
+  selectedSessionId = null;
+  saveToStorage();
+  renderSessionsList();
+}
+
 function deleteSession(id) {
   if (!confirm('Supprimer cette séance ?')) return;
   if (selectedSessionId === id) selectedSessionId = null;
@@ -976,10 +1006,11 @@ function deleteSession(id) {
 let selectedSessionId = null;
 
 function onSessionCheckChange(id, checkbox) {
-  document.querySelectorAll('.session-checkbox').forEach(chk => { if (chk.id !== checkbox.id) chk.checked = false; });
-  document.querySelectorAll('.session-card').forEach(card => card.classList.remove('selected'));
-  if (checkbox.checked) { selectedSessionId = id; document.getElementById('card-' + id).classList.add('selected'); }
-  else selectedSessionId = null;
+  const card = document.getElementById('card-' + id);
+  if (card) card.classList.toggle('selected', checkbox.checked);
+  // Met à jour selectedSessionId : null si multi, sinon l'unique coché
+  const checked = [...document.querySelectorAll('.session-checkbox')].filter(c => c.checked);
+  selectedSessionId = checked.length === 1 ? parseInt(checked[0].id.replace('chk-', '')) : null;
 }
 
 function buildCalcTSV(sessionsToExport) {
