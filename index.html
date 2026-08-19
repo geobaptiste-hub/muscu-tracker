@@ -478,9 +478,8 @@
         </div>
       </div>
 
+      <button onclick="resetObjectifs()" style="width:100%; margin-top:4px; font-size:13px; color:#888; border-color:rgba(0,0,0,0.1);">↺ Reset objectifs</button>
     </div>
-
-    <p style="font-size: 12px; color: #888; text-align: center; line-height: 1.6;">
       Les valeurs se mettent à jour automatiquement<br>selon ce que tu saisis dans l'onglet Saisie.
     </p>
   </div>
@@ -489,6 +488,10 @@
   <div id="sessions" class="tab-content">
     <div class="sessions-list" id="sessionsList"></div>
     <div id="noSessions" class="no-data">Aucune séance enregistrée</div>
+    <div id="sessionsActions" style="display:none; gap:8px; margin-top:1rem;">
+      <button style="flex:1; font-weight:600;" onclick="selectAllSessions()">☑ Tout sélectionner</button>
+      <button class="btn-danger" style="flex:1; font-weight:600;" onclick="deleteSelectedSessions()">🗑 Effacer la sélection</button>
+    </div>
   </div>
 
   <!-- TAB: EXPORT -->
@@ -577,10 +580,10 @@ const EXERCISE_LISTS = {
   Q: ['Fentes', 'Squat', 'Sumo squat', 'Leg ext', 'Leg curl', 'Presse à cuisse', 'Hack Squat', 'Mollets debout', 'Mollets assis', 'Relevé lombaire', 'Gainage', 'Crunch'],
 };
 const VARIATIONS = {
-  P: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
-  F: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
-  D: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
-  Q: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté', 'Unilatéral'],
+  P: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+  F: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+  D: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
+  Q: ['élast rouge', 'élast noir', 'élast violet', 'élast vert', 'SS', 'Dégressives', 'Lent', 'Rest pause', 'Explosif', 'Prises serrées', 'Prises neutres', 'Prises écartées', 'Lesté'],
 };
 let sessions = [];
 
@@ -1033,8 +1036,15 @@ function clearForm() {
 function renderSessionsList() {
   const list = document.getElementById('sessionsList');
   const noSessions = document.getElementById('noSessions');
-  if (sessions.length === 0) { list.innerHTML = ''; noSessions.style.display = 'block'; return; }
+  const actions = document.getElementById('sessionsActions');
+  if (sessions.length === 0) {
+    list.innerHTML = '';
+    noSessions.style.display = 'block';
+    if (actions) actions.style.display = 'none';
+    return;
+  }
   noSessions.style.display = 'none';
+  if (actions) actions.style.display = 'flex';
   const sorted = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
   list.innerHTML = sorted.map(s => `
     <div class="session-card" id="card-${s.id}">
@@ -1049,7 +1059,35 @@ function renderSessionsList() {
   `).join('');
 }
 
-function deleteSession(id) {
+function resetObjectifs() {
+  ['objExos','objSeries','objReps','objPoids'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  saveObjectifs();
+  updateCalc();
+}
+
+function selectAllSessions() {
+  const checkboxes = document.querySelectorAll('.session-checkbox');
+  const allChecked = [...checkboxes].every(c => c.checked);
+  // Si tout est déjà coché, tout décocher ; sinon tout cocher
+  checkboxes.forEach(chk => { chk.checked = !allChecked; });
+  document.querySelectorAll('.session-card').forEach(card => card.classList.toggle('selected', !allChecked));
+  // selectedSessionId n'est plus pertinent en multi-select — on passe en mode multi
+  selectedSessionId = null;
+}
+
+function deleteSelectedSessions() {
+  const checked = [...document.querySelectorAll('.session-checkbox')].filter(c => c.checked);
+  if (checked.length === 0) { alert('Aucune séance sélectionnée.'); return; }
+  if (!confirm(`Supprimer ${checked.length} séance(s) ?`)) return;
+  const ids = new Set(checked.map(c => parseInt(c.id.replace('chk-', ''))));
+  sessions = sessions.filter(s => !ids.has(s.id));
+  if (ids.has(selectedSessionId)) selectedSessionId = null;
+  saveToStorage();
+  renderSessionsList();
+}
   if (!confirm('Supprimer cette séance ?')) return;
   if (selectedSessionId === id) selectedSessionId = null;
   sessions = sessions.filter(s => s.id !== id);
